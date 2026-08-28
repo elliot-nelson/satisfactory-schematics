@@ -1,0 +1,33 @@
+diff --git a/CUE4Parse/CUE4Parse.csproj b/CUE4Parse/CUE4Parse.csproj
+index b0cc02f..2400c46 100644
+--- a/CUE4Parse/CUE4Parse.csproj
++++ b/CUE4Parse/CUE4Parse.csproj
+@@ -60,7 +60,7 @@
+     <CMakeBuildDir>$(CMakeProject)builddir</CMakeBuildDir>
+   </PropertyGroup>
+
+-  <Target Name="Build-Natives" BeforeTargets="BeforeBuild" AfterTargets="AfterBuild">
++  <Target Name="Build-Natives" BeforeTargets="BeforeBuild" AfterTargets="AfterBuild" Condition="'$(CUE4PARSE_SKIP_NATIVE)' != 'true' and '$(CUE4PARSE_SKIP_NATIVE)' != '1'">
+     <MakeDir Directories="$(CMakeBuildDir)" Condition="!Exists('$(CMakeBuildDir)')" />
+     <Exec Command="cmake .." ConsoleToMSBuild="true" WorkingDirectory="$(CMakeBuildDir)" IgnoreExitCode="true">
+       <Output TaskParameter="ConsoleOutput" PropertyName="OutputOfExec" />
+diff --git a/CUE4Parse/MappingsProvider/Usmap/UsmapProperties.cs b/CUE4Parse/MappingsProvider/Usmap/UsmapProperties.cs
+index 86820a7..4d892e5 100644
+--- a/CUE4Parse/MappingsProvider/Usmap/UsmapProperties.cs
++++ b/CUE4Parse/MappingsProvider/Usmap/UsmapProperties.cs
+@@ -57,9 +57,14 @@ namespace CUE4Parse.MappingsProvider.Usmap
+                     break;
+                 case EPropertyType.SetProperty:
+                 case EPropertyType.ArrayProperty:
+-                case EPropertyType.OptionalProperty:
+                     innerType = ParsePropertyType(Ar, nameLut);
+                     break;
++                // sf-extract: Satisfactory's mappings dumper writes OptionalProperty as a
++                // bare tag with NO inner type (unlike upstream CUE4Parse's assumption).
++                // Reading an inner type here consumes one extra byte and desyncs the whole
++                // usmap struct table -> IndexOutOfRange in ReadName. Treat it as a leaf.
++                case EPropertyType.OptionalProperty:
++                    break;
+                 case EPropertyType.MapProperty:
+                     innerType = ParsePropertyType(Ar, nameLut);
+                     valueType = ParsePropertyType(Ar, nameLut);
