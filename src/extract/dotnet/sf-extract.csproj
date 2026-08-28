@@ -8,22 +8,14 @@
     <AssemblyName>sf-extract</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <InvariantGlobalization>true</InvariantGlobalization>
-    <!-- We only need mesh geometry then glTF; skip the C++ natives (ACL/Oodle build).
-         Oodle decompression is handled at runtime via OodleHelper (download on
-         Linux/Windows, or a prebuilt lib passed with the oodle flag). -->
+    <!-- Skip the C++ natives build; Oodle/zlib are provided at runtime (see
+         ../../../vendor/cue4parse/README.md). -->
     <CUE4PARSE_SKIP_NATIVE>true</CUE4PARSE_SKIP_NATIVE>
   </PropertyGroup>
 
-  <!-- vendor/ is consumed only via the project reference below; don't compile its
-       sources (tests, etc.) into this assembly. -->
+  <!-- Our one dependency: the vendored + patched CUE4Parse, hoisted to the repo-level vendor/. -->
   <ItemGroup>
-    <Compile Remove="vendor/**/*.cs" />
-    <EmbeddedResource Remove="vendor/**" />
-    <None Remove="vendor/**" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="vendor/CUE4Parse/CUE4Parse-Conversion/CUE4Parse-Conversion.csproj" />
+    <ProjectReference Include="../../../vendor/cue4parse/CUE4Parse-Conversion/CUE4Parse-Conversion.csproj" />
   </ItemGroup>
 
 </Project>

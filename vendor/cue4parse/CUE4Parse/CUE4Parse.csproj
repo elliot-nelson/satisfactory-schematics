@@ -1,4 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <!-- Modified for satisfactory-schematics: the Build-Natives target below is gated on
+       CUE4PARSE_SKIP_NATIVE so we can skip the C++ build. Upstream: FabianFG/CUE4Parse @ 7ff8701
+       (Apache-2.0). Full delta: vendor/cue4parse/README.md + patches/sf-extract.patch. -->
   <PropertyGroup>
     <NeutralLanguage>en</NeutralLanguage>
     <Nullable>enable</Nullable>

@@ -34,7 +34,8 @@ Dropped to shrink 213 MB → ~10 MB, none of which we compile:
 ## Patch we applied
 
 The **entire** delta from pristine upstream is in [`patches/sf-extract.patch`](patches/sf-extract.patch)
-— two hunks:
+— two functional changes (each modified file also gets a short "modified for satisfactory-schematics"
+provenance header, per Apache-2.0 §4(b)):
 
 1. **`CUE4Parse/MappingsProvider/Usmap/UsmapProperties.cs`** — the load-bearing fix. Satisfactory's
    shipped `FactoryGame.usmap` encodes `OptionalProperty` as a **leaf** (no inner type). Upstream

@@ -1,4 +1,8 @@
-﻿using System;
+﻿// Modified for satisfactory-schematics: OptionalProperty is parsed as a leaf (no inner type)
+// to match Satisfactory's shipped FactoryGame.usmap. Upstream: FabianFG/CUE4Parse @ 7ff8701
+// (Apache-2.0). Full delta: vendor/cue4parse/README.md + patches/sf-extract.patch.
+
+using System;
 using System.Collections.Generic;
 
 namespace CUE4Parse.MappingsProvider.Usmap

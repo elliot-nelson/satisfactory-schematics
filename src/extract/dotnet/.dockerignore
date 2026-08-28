@@ -1,6 +1,0 @@
-bin/
-obj/
-vendor/CUE4Parse/.git/
-vendor/CUE4Parse/**/bin/
-vendor/CUE4Parse/**/obj/
-vendor/CUE4Parse/CUE4Parse-Natives/builddir/

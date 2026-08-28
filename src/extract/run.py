@@ -20,13 +20,15 @@ from pathlib import Path
 
 from src.cli import console as C
 from src.cli.config import Config
-from src.cli.context import EXTRACT_DIR, ensure
+from src.cli.context import EXTRACT_DIR, REPO_ROOT, ensure
 from src.cli.doctor import resolve_game_dir
 from src.common.buildings import Building, Catalog, load_catalog
 
 IMAGE = "sf-extract"
 DOTNET_DIR = Path(__file__).resolve().parent / "dotnet"
-OODLE_IN_IMAGE = "/src/liboodle-data-shared.so"
+DOCKERFILE = DOTNET_DIR / "Dockerfile"
+# The image builds from the repo root (app in src/, dependency in vendor/); see the Dockerfile.
+OODLE_IN_IMAGE = "/opt/nativelibs/liboodle-data-shared.so"
 
 
 class ExtractError(Exception):
@@ -75,7 +77,12 @@ def build_image(*, rebuild: bool = False) -> None:
     C.console.print(
         f"[bold]Building {IMAGE} image[/] (first run or --rebuild; this takes a few min)..."
     )
-    cmd = ["docker", "build", "--platform=linux/amd64", "-t", IMAGE, str(DOTNET_DIR)]
+    cmd = [
+        "docker", "build", "--platform=linux/amd64",
+        "-t", IMAGE,
+        "-f", str(DOCKERFILE),
+        str(REPO_ROOT),
+    ]  # fmt: skip
     if rebuild:
         cmd.insert(2, "--no-cache")  # avoid COPY-layer staleness (SPEC.md 6)
     if subprocess.run(cmd).returncode != 0:

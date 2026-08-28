@@ -1,0 +1,20 @@
+satisfactory-schematics
+Copyright (c) 2026 Elliot Nelson
+
+This project's own source (everything outside vendor/) is licensed under the MIT License;
+see LICENSE.
+
+------------------------------------------------------------------------------------------
+Third-party components (bundled under their own licenses):
+
+vendor/cue4parse/ — a trimmed, modified redistribution of CUE4Parse
+    Upstream:  https://github.com/FabianFG/CUE4Parse  (commit 7ff8701)
+    License:   Apache License 2.0
+    See:       vendor/cue4parse/LICENSE           (full license text)
+               vendor/cue4parse/NOTICE            (upstream attributions, retained)
+               vendor/cue4parse/README.md         (what we trimmed + why it's vendored)
+               vendor/cue4parse/patches/           (the exact modifications we applied)
+
+    Per Apache-2.0 section 4(b), the files we modified carry prominent in-file notices
+    stating that they were changed.
+------------------------------------------------------------------------------------------

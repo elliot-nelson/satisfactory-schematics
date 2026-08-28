@@ -1,8 +1,16 @@
 diff --git a/CUE4Parse/CUE4Parse.csproj b/CUE4Parse/CUE4Parse.csproj
-index b0cc02f..2400c46 100644
+index b0cc02f..476161a 100644
 --- a/CUE4Parse/CUE4Parse.csproj
 +++ b/CUE4Parse/CUE4Parse.csproj
-@@ -60,7 +60,7 @@
+@@ -1,4 +1,7 @@
+ <Project Sdk="Microsoft.NET.Sdk">
++  <!-- Modified for satisfactory-schematics: the Build-Natives target below is gated on
++       CUE4PARSE_SKIP_NATIVE so we can skip the C++ build. Upstream: FabianFG/CUE4Parse @ 7ff8701
++       (Apache-2.0). Full delta: vendor/cue4parse/README.md + patches/sf-extract.patch. -->
+   <PropertyGroup>
+     <NeutralLanguage>en</NeutralLanguage>
+     <Nullable>enable</Nullable>
+@@ -60,7 +63,7 @@
      <CMakeBuildDir>$(CMakeProject)builddir</CMakeBuildDir>
    </PropertyGroup>
 
@@ -12,10 +20,20 @@ index b0cc02f..2400c46 100644
      <Exec Command="cmake .." ConsoleToMSBuild="true" WorkingDirectory="$(CMakeBuildDir)" IgnoreExitCode="true">
        <Output TaskParameter="ConsoleOutput" PropertyName="OutputOfExec" />
 diff --git a/CUE4Parse/MappingsProvider/Usmap/UsmapProperties.cs b/CUE4Parse/MappingsProvider/Usmap/UsmapProperties.cs
-index 86820a7..4d892e5 100644
+index 86820a7..44d4027 100644
 --- a/CUE4Parse/MappingsProvider/Usmap/UsmapProperties.cs
 +++ b/CUE4Parse/MappingsProvider/Usmap/UsmapProperties.cs
-@@ -57,9 +57,14 @@ namespace CUE4Parse.MappingsProvider.Usmap
+@@ -1,4 +1,8 @@
+-﻿using System;
++﻿// Modified for satisfactory-schematics: OptionalProperty is parsed as a leaf (no inner type)
++// to match Satisfactory's shipped FactoryGame.usmap. Upstream: FabianFG/CUE4Parse @ 7ff8701
++// (Apache-2.0). Full delta: vendor/cue4parse/README.md + patches/sf-extract.patch.
++
++using System;
+ using System.Collections.Generic;
+
+ namespace CUE4Parse.MappingsProvider.Usmap
+@@ -57,9 +61,14 @@ namespace CUE4Parse.MappingsProvider.Usmap
                      break;
                  case EPropertyType.SetProperty:
                  case EPropertyType.ArrayProperty:
