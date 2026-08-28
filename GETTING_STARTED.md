@@ -41,10 +41,20 @@ can run at all:
 4. **A Satisfactory install** that matches the pinned version in
    [`config.yaml`](config.yaml) — currently **game `1.2.4.0`, engine UE `5.6.1`**. Doctor
    **verifies** the version and hard-stops on a mismatch, but it can't obtain or update the
-   game for you. See [§3](#3-getting-the-game) below. Point doctor at it via either:
-   - `game.path` in `config.yaml`, or
-   - `export SAT_GAME_DIR=/path/to/Satisfactory`, or
-   - drop/symlink it at `./game` (or `../game`), which doctor auto-detects.
+   game for you. See [§3](#3-getting-the-game) below.
+
+   **You usually don't need to configure the path.** Doctor scans common install locations
+   (macOS/Windows/Linux Steam, Epic) and, when it finds one, **caches it to
+   `config.local.yaml`** so later runs and every stage resolve it instantly. Override the
+   detection any of these ways (highest priority first):
+   - `export SAT_GAME_DIR=/path/to/Satisfactory` (one-off), or
+   - set `game.path` in **`config.local.yaml`** (machine-local, not committed), or
+   - drop/symlink it at `./game` or `../game`.
+
+   > **`config.local.yaml`** is a gitignored file that is deep-merged *over* `config.yaml`
+   > (local wins). Use it for anything machine-specific you don't want to commit — the game
+   > path, a custom `BLENDER` location, etc. Doctor creates/updates it for you; it's also
+   > safe to hand-edit.
 
 ---
 

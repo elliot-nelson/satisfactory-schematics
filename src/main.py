@@ -79,5 +79,10 @@ for _stage in _STAGES:
     )
 
 
+def main() -> None:
+    """Console-script + ``python -m`` entrypoint. Forces the program name to ``sat``."""
+    app(prog_name="sat")
+
+
 if __name__ == "__main__":
-    app()
+    main()

@@ -1,6 +1,11 @@
-# Generated pipeline trees (never committed)
+# Temporary build files
 build/
+
+# Distro
 dist/
+
+# Local config (Satisfactory install location, etc.)
+config.local.yaml
 
 # Python
 .venv/
@@ -10,14 +15,9 @@ __pycache__/
 .ruff_cache/
 .mypy_cache/
 
-# .NET (extractor, added in Phase 3)
+# .NET
 bin/
 obj/
 
-# Generated / large assets
-*.glb
-*.gltf
-*.png
-
-# OS
+# MacOS
 .DS_Store

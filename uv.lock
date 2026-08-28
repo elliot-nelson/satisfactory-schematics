@@ -600,7 +600,7 @@ wheels = [
 ]
 
 [[package]]
-name = "satisfactory-sprites"
+name = "satisfactory-schematics"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [

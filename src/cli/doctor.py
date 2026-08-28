@@ -29,7 +29,7 @@ from typing import Any
 from rich.table import Table
 
 from src.cli import console as C
-from src.cli.config import Config, ConfigError, load_config
+from src.cli.config import Config, ConfigError, load_config, update_local
 from src.cli.context import DOCTOR_DIR, REPO_ROOT, ensure
 
 
@@ -134,33 +134,72 @@ def check_config(cfg: Config | None, err: str | None) -> Check:
     )
 
 
-def resolve_game_dir(cfg: Config) -> Path | None:
-    """Find the Satisfactory install: config path, env, then common local locations."""
-    candidates: list[Path] = []
-    if cfg.game.path:
-        candidates.append(Path(cfg.game.path).expanduser())
-    if env := os.environ.get("SAT_GAME_DIR"):
-        candidates.append(Path(env).expanduser())
-    candidates += [
+def _common_game_dirs() -> list[Path]:
+    """Common Satisfactory install locations across macOS / Windows / Linux."""
+    home = Path.home()
+    dirs = [
         REPO_ROOT / "game",
         REPO_ROOT.parent / "game",
-        Path.home() / "Library/Application Support/Steam/steamapps/common/Satisfactory",
+        # macOS Steam
+        home / "Library/Application Support/Steam/steamapps/common/Satisfactory",
+        # Linux Steam
+        home / ".steam/steam/steamapps/common/Satisfactory",
+        home / ".local/share/Steam/steamapps/common/Satisfactory",
     ]
-    for c in candidates:
+    # Windows Steam / Epic (harmless no-ops on other OSes).
+    for drive in ("C:", "D:", "E:"):
+        dirs += [
+            Path(rf"{drive}\Program Files (x86)\Steam\steamapps\common\Satisfactory"),
+            Path(rf"{drive}\SteamLibrary\steamapps\common\Satisfactory"),
+            Path(rf"{drive}\Program Files\Epic Games\SatisfactoryEarlyAccess"),
+            Path(rf"{drive}\Program Files\Epic Games\SatisfactoryExperimental"),
+        ]
+    return dirs
+
+
+def resolve_game_dir(cfg: Config) -> tuple[Path | None, str]:
+    """Find the install and report where it came from.
+
+    An **explicitly configured** path (``config.local.yaml``/``config.yaml`` ``game.path`` or
+    ``$SAT_GAME_DIR``) is honored even when it doesn't exist -- it comes back with a
+    ``*-missing`` source so doctor reports it and never silently overwrites your choice.
+    Auto-detection of a common location only happens when nothing is configured.
+
+    Returns ``(path, source)`` with source in: ``config``, ``config-missing``, ``env``,
+    ``env-missing``, ``detected``, ``none``.
+    """
+    if cfg.game.path:
+        p = Path(cfg.game.path).expanduser()
+        return (p, "config") if p.is_dir() else (p, "config-missing")
+    if env := os.environ.get("SAT_GAME_DIR"):
+        p = Path(env).expanduser()
+        return (p, "env") if p.is_dir() else (p, "env-missing")
+    for c in _common_game_dirs():
         if c.is_dir():
-            return c
-    return None
+            return c, "detected"
+    return None, "none"
 
 
-def check_game_path(cfg: Config, game_dir: Path | None) -> Check:
+def check_game_path(cfg: Config, game_dir: Path | None, source: str) -> Check:
+    if source in ("config-missing", "env-missing"):
+        where = "$SAT_GAME_DIR" if source == "env-missing" else "game.path (config.local.yaml)"
+        return Check(
+            "game install",
+            Status.FAIL,
+            f"configured path does not exist: {game_dir} (from {where}). "
+            f"Fix it, or clear it to re-enable auto-detection.",
+        )
     if game_dir is None:
         return Check(
             "game install",
             Status.FAIL,
-            "not found (set game.path in config.yaml or $SAT_GAME_DIR)",
+            "not found in config or any common location (see GETTING_STARTED.md 3)",
             Fix(
                 "point at your install",
-                manual="set game.path in config.yaml, or export SAT_GAME_DIR=/path/to/Satisfactory",
+                manual=(
+                    "set game.path in config.local.yaml, or "
+                    "export SAT_GAME_DIR=/path/to/Satisfactory"
+                ),
             ),
         )
     missing = [rel for rel in cfg.game.requires if not (game_dir / rel).exists()]
@@ -170,7 +209,12 @@ def check_game_path(cfg: Config, game_dir: Path | None) -> Check:
             Status.FAIL,
             f"{game_dir} is missing: {', '.join(missing)}",
         )
-    return Check("game install", Status.OK, str(game_dir))
+    note = (
+        " (auto-detected -> cached to config.local.yaml)"
+        if source == "detected"
+        else f" (from {source})"
+    )
+    return Check("game install", Status.OK, f"{game_dir}{note}")
 
 
 def _read_version_file(game_dir: Path) -> dict[str, Any] | None:
@@ -397,10 +441,19 @@ def _collect(cfg: Config | None, cfg_err: str | None) -> list[Check]:
     checks: list[Check] = [check_python_uv(), check_config(cfg, cfg_err)]
     if cfg is None:
         return checks
-    game_dir = resolve_game_dir(cfg)
+    game_dir, source = resolve_game_dir(cfg)
+    game_path_check = check_game_path(cfg, game_dir, source)
+    # Cache ONLY a freshly auto-detected, valid install (source == "detected"). An explicitly
+    # configured path -- even an invalid one -- is never overwritten: doctor reports it and
+    # leaves the user's choice intact.
+    if source == "detected" and game_dir is not None and game_path_check.status is Status.OK:
+        update_local({"game": {"path": str(game_dir.resolve())}})
+    # Only version-check a usable install; otherwise the version row would just echo the
+    # path failure. A valid game path yields status OK above.
+    usable_dir = game_dir if game_path_check.status is Status.OK else None
     checks += [
-        check_game_path(cfg, game_dir),
-        check_game_version(cfg, game_dir),
+        game_path_check,
+        check_game_version(cfg, usable_dir),
         check_docker(),
         check_blender(cfg),
         check_cli_tool(

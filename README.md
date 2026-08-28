@@ -1,4 +1,6 @@
-# satisfactory-sprites
+# satisfactory-schematics
+
+Pre-rendered images of Satisfactory buildings, for use in your favorite diagramming tools.
 
 Turn a local **Satisfactory** install into true-to-scale orthographic blueprint **SVGs/PNGs**
 (top / front / back / left / right) for dropping into Excalidraw, draw.io, or Miro.

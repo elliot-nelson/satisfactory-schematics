@@ -1,7 +1,7 @@
 [project]
-name = "satisfactory-sprites"
+name = "satisfactory-schematics"
 version = "0.1.0"
-description = "Satisfactory buildings -> true-to-scale orthographic blueprint SVGs/PNGs."
+description = "Pre-rendered images of Satisfactory buildings, for use in your favorite diagramming tools."
 requires-python = ">=3.12"
 dependencies = [
     "typer>=0.12",
@@ -11,7 +11,7 @@ dependencies = [
 ]
 
 [project.scripts]
-sat = "src.main:app"
+sat = "src.main:main"
 
 [dependency-groups]
 dev = [

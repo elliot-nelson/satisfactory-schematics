@@ -1,1 +1,1 @@
-"""satisfactory-sprites: game install -> true-to-scale orthographic blueprints."""
+"""satisfactory-schematics: pre-rendered images of Satisfactory buildings for diagramming tools."""

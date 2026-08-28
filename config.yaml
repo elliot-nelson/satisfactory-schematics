@@ -1,4 +1,4 @@
-# Root configuration for the Satisfactory sprites pipeline.
+# Root configuration for the satisfactory-schematics pipeline.
 #
 # `sat doctor` and every pipeline stage read (and validate) this file. The game/engine
 # versions below are what the extractor is proven against -- doctor HARD-GATES the installed
