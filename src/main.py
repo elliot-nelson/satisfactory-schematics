@@ -1,7 +1,7 @@
 """The ``sat`` CLI entrypoint.
 
-Only ``doctor`` (and the dev helpers ``check`` / ``fix``) are implemented for now; the
-pipeline stage commands are stubs that will be filled in during later phases.
+Implemented so far: ``doctor``, ``extract`` (plus the dev helpers ``check`` / ``fix``). The
+remaining pipeline stage commands are stubs that will be filled in during later phases.
 """
 
 from __future__ import annotations
@@ -54,7 +54,54 @@ def fix() -> None:
     raise typer.Exit(1 if rc else 0)
 
 
-_STAGES = ["extract", "prepare", "render", "finalize", "preview", "bundle", "build"]
+@app.command()
+def extract(
+    only: list[str] = typer.Option(
+        None,
+        "--only",
+        help="Extract only these building name(s) (repeatable); skips segments/connectors.",
+    ),
+    skip_segments: bool = typer.Option(
+        False, "--skip-segments", help="Skip belt/pipe/beam/junction tiles."
+    ),
+    skip_connectors: bool = typer.Option(
+        False, "--skip-connectors", help="Skip shared mouth-plate meshes."
+    ),
+    skip_ports: bool = typer.Option(False, "--skip-ports", help="Skip the --dump-ports pass."),
+    rebuild: bool = typer.Option(
+        False, "--rebuild", help="Force a rebuild of the sf-extract Docker image."
+    ),
+    find: str | None = typer.Option(
+        None,
+        "--find",
+        help="Discovery mode: list mounted asset paths containing this substring, then exit.",
+    ),
+) -> None:
+    """Extract meshes + port data from the Satisfactory install into build/01-extract/."""
+    from src.cli.config import ConfigError, load_config
+    from src.extract.run import ExtractError, ExtractPlan, find_assets, run_extract
+
+    try:
+        cfg = load_config()
+        if find is not None:
+            find_assets(cfg, find, rebuild=rebuild)
+            return
+        run_extract(
+            cfg,
+            ExtractPlan(
+                only=set(only or []),
+                skip_segments=skip_segments,
+                skip_connectors=skip_connectors,
+                skip_ports=skip_ports,
+                rebuild=rebuild,
+            ),
+        )
+    except (ExtractError, ConfigError) as exc:
+        C.err_console.print(f"[red]extract failed:[/] {exc}")
+        raise typer.Exit(1) from exc
+
+
+_STAGES = ["prepare", "render", "finalize", "preview", "bundle", "build"]
 
 
 def _stub(name: str) -> None:
