@@ -1,0 +1,15 @@
+# Docker image wraps the CUE4Parse + Oodle Python extraction process. Globs below are
+# relative to the root of the repo.
+
+# Ignore everything
+*
+
+# Include src/ and vendor/
+!src
+!vendor
+
+# Ignore output artifacts / temporary files
+**/bin/
+**/obj/
+**/__pycache__/
+**/.DS_Store

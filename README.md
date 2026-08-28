@@ -23,7 +23,7 @@ brew install uv          # bootstrap prerequisite (needs Homebrew first)
 ```
 
 `doctor` verifies (and can install) Docker, Blender, potrace, rsvg, the Oodle/zlib libs, and
-**hard-stops if your installed game version does not match `config.yaml`** (`game.version`).
+**hard-stops if your installed game version does not match `config/config.yaml`** (`game.version`).
 
 ## Dev
 

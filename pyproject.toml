@@ -3,6 +3,9 @@ name = "satisfactory-schematics"
 version = "0.1.0"
 description = "Pre-rendered images of Satisfactory buildings, for use in your favorite diagramming tools."
 requires-python = ">=3.12"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Elliot Nelson" }]
 dependencies = [
     "typer>=0.12",
     "rich>=13.7",
@@ -24,7 +27,7 @@ dev = [
 [tool.ruff]
 line-length = 100
 target-version = "py312"
-extend-exclude = ["src/extract/dotnet/vendor", "build", "dist"]
+extend-exclude = ["vendor", "build", "dist"]
 
 [tool.ruff.lint]
 select = [
@@ -40,6 +43,10 @@ select = [
     "TID",          # tidy imports
 ]
 
+[tool.ruff.lint.flake8-bugbear]
+# Typer's declarative API puts Option/Argument calls in parameter defaults (B008).
+extend-immutable-calls = ["typer.Option", "typer.Argument"]
+
 [tool.ruff.lint.per-file-ignores]
 "src/render/blender/*" = ["ANN", "F821"]  # bpy is injected at runtime
 "tests/*" = ["ANN"]
@@ -48,7 +55,7 @@ select = [
 python_version = "3.12"
 warn_unused_ignores = true
 ignore_missing_imports = true
-exclude = ["build", "dist", "src/extract/dotnet"]
+exclude = ["build", "dist", "vendor"]
 
 [build-system]
 requires = ["hatchling"]

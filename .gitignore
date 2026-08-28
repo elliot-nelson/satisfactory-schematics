@@ -5,7 +5,7 @@ build/
 dist/
 
 # Local config (Satisfactory install location, etc.)
-config.local.yaml
+config/config.local.yaml
 
 # Python
 .venv/
