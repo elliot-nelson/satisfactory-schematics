@@ -182,7 +182,9 @@ def resolve_game_dir(cfg: Config) -> tuple[Path | None, str]:
 
 def check_game_path(cfg: Config, game_dir: Path | None, source: str) -> Check:
     if source in ("config-missing", "env-missing"):
-        where = "$SAT_GAME_DIR" if source == "env-missing" else "game.path (config.local.yaml)"
+        where = (
+            "$SAT_GAME_DIR" if source == "env-missing" else "game.path (config/config.local.yaml)"
+        )
         return Check(
             "game install",
             Status.FAIL,
@@ -197,7 +199,7 @@ def check_game_path(cfg: Config, game_dir: Path | None, source: str) -> Check:
             Fix(
                 "point at your install",
                 manual=(
-                    "set game.path in config.local.yaml, or "
+                    "set game.path in config/config.local.yaml, or "
                     "export SAT_GAME_DIR=/path/to/Satisfactory"
                 ),
             ),
@@ -210,7 +212,7 @@ def check_game_path(cfg: Config, game_dir: Path | None, source: str) -> Check:
             f"{game_dir} is missing: {', '.join(missing)}",
         )
     note = (
-        " (auto-detected -> cached to config.local.yaml)"
+        " (auto-detected -> cached to config/config.local.yaml)"
         if source == "detected"
         else f" (from {source})"
     )
@@ -385,13 +387,21 @@ def check_native_libs(cfg: Config) -> Check:
 
 
 def check_extractor_ready() -> Check:
-    """Vendored+patched CUE4Parse and the sf-extract image (built in Phase 3)."""
-    vendor = REPO_ROOT / "src/extract/dotnet/vendor/CUE4Parse"
-    if not vendor.exists():
+    """Vendored+patched CUE4Parse and the sf-extract image."""
+    usmap_patch = REPO_ROOT / "vendor/cue4parse/CUE4Parse/MappingsProvider/Usmap/UsmapProperties.cs"
+    if not usmap_patch.exists():
         return Check(
             "extractor (CUE4Parse)",
             Status.PENDING,
-            "not scaffolded yet -- arrives in Phase 3",
+            "vendor/cue4parse missing (see vendor/cue4parse/README.md)",
+            required=False,
+        )
+    # Sentinel: the OptionalProperty-as-leaf patch must be present, or extraction desyncs.
+    if "sf-extract: Satisfactory" not in usmap_patch.read_text(encoding="utf-8"):
+        return Check(
+            "extractor (CUE4Parse)",
+            Status.WARN,
+            "vendored but OptionalProperty patch missing -- re-apply patches/sf-extract.patch",
             required=False,
         )
     code, _ = _run(["docker", "image", "inspect", "sf-extract"], timeout=15)

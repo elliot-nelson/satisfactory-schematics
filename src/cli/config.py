@@ -1,4 +1,4 @@
-"""Load and validate the root ``config.yaml``.
+"""Load and validate ``config/config.yaml`` (+ machine-local ``config/config.local.yaml``).
 
 A typo or unknown top-level key fails loudly (``extra='forbid'``) so misconfiguration is
 caught at doctor time rather than deep inside a stage.
@@ -13,13 +13,13 @@ import yaml
 from pydantic import BaseModel, ConfigDict, ValidationError
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-CONFIG_PATH = REPO_ROOT / "config.yaml"
+CONFIG_PATH = REPO_ROOT / "config" / "config.yaml"
 # Machine-local overrides + cache. NOT committed (see .gitignore). Merged over config.yaml.
-LOCAL_CONFIG_PATH = REPO_ROOT / "config.local.yaml"
+LOCAL_CONFIG_PATH = REPO_ROOT / "config" / "config.local.yaml"
 
 _LOCAL_HEADER = (
-    "# config.local.yaml -- machine-local overrides + cache (NOT committed).\n"
-    "# Deep-merged over config.yaml at load time (local values win).\n"
+    "# config/config.local.yaml -- machine-local overrides + cache (NOT committed).\n"
+    "# Deep-merged over config/config.yaml at load time (local values win).\n"
     "# Partly managed by `sat doctor` (e.g. the detected game path); safe to hand-edit.\n"
 )
 

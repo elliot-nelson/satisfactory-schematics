@@ -1,0 +1,78 @@
+# Single source of truth for the buildings we extract + render.
+#
+# Each entry:
+#   mesh:      in-pak asset path of the visual body mesh (no extension; SM_/SK_ prefix and a
+#              trailing .uasset are handled by the extractor). The map KEY is the friendly
+#              stem used everywhere downstream (.glb name, clearance/ports keys, manifest).
+#   blueprint: the Build_* blueprint package -- source of I/O ports + component transforms
+#              (via `--dump-ports`). The Docs ClassName (Build_<X>_C) is derived from the leaf.
+#   category:  preview grouping (production / logistics / architecture).
+#   annot:     OPTIONAL per-building port-layer correction (see SPEC.md 12.15). Consumed in a
+#              later phase; harmless to extraction.
+#
+# Notes:
+#   - We use the "_static" visual meshes where they're the current in-game geometry; some
+#     buildings' SM_* meshes are the right body instead (e.g. splitter/merger squares, SPEC 12.7).
+#   - Confirm paths for a new game version with:  ./sat extract --find <substr>
+
+constructor:
+  mesh: FactoryGame/Content/FactoryGame/Buildable/Factory/ConstructorMk1/Mesh/ConstructorMk1_static
+  blueprint: FactoryGame/Content/FactoryGame/Buildable/Factory/ConstructorMk1/Build_ConstructorMk1
+  category: production
+
+assembler:
+  mesh: FactoryGame/Content/FactoryGame/Buildable/Factory/AssemblerMk1/Mesh/AssemblerMk1_static
+  blueprint: FactoryGame/Content/FactoryGame/Buildable/Factory/AssemblerMk1/Build_AssemblerMk1
+  category: production
+
+manufacturer:
+  mesh: FactoryGame/Content/FactoryGame/Buildable/Factory/ManufacturerMk1/Mesh/SM_Manufacturer
+  blueprint: FactoryGame/Content/FactoryGame/Buildable/Factory/ManufacturerMk1/Build_ManufacturerMk1
+  category: production
+
+blender:
+  mesh: FactoryGame/Content/FactoryGame/Buildable/Factory/Blender/Mesh/SM_Blender_01
+  blueprint: FactoryGame/Content/FactoryGame/Buildable/Factory/Blender/Build_Blender
+  category: production
+
+smelter:
+  mesh: FactoryGame/Content/FactoryGame/Buildable/Factory/SmelterMk1/Mesh/SmelterMk1_static
+  blueprint: FactoryGame/Content/FactoryGame/Buildable/Factory/SmelterMk1/Build_SmelterMk1
+  category: production
+
+foundry:
+  mesh: FactoryGame/Content/FactoryGame/Buildable/Factory/FoundryMk1/Mesh/FoundryMk1_static
+  blueprint: FactoryGame/Content/FactoryGame/Buildable/Factory/FoundryMk1/Build_FoundryMk1
+  category: production
+
+refinery:
+  mesh: FactoryGame/Content/FactoryGame/Buildable/Factory/OilRefinery/Mesh/SM_OilRefinery_01
+  blueprint: FactoryGame/Content/FactoryGame/Buildable/Factory/OilRefinery/Build_OilRefinery
+  category: production
+
+particle_accelerator:
+  mesh: FactoryGame/Content/FactoryGame/Buildable/Factory/HadronCollider/Mesh/SM_HadronCollider_01
+  blueprint: FactoryGame/Content/FactoryGame/Buildable/Factory/HadronCollider/Build_HadronCollider
+  category: production
+  annot: { rot_deg: 180, shift: [4.5, 0, 0] } # SPEC.md 12.15
+
+packager:
+  mesh: FactoryGame/Content/FactoryGame/Buildable/Factory/Packager/Mesh/SM_Packager_01
+  blueprint: FactoryGame/Content/FactoryGame/Buildable/Factory/Packager/Build_Packager
+  category: production
+
+converter:
+  mesh: FactoryGame/Content/FactoryGame/Buildable/Factory/Converter/Mesh/SM_Converter_01
+  blueprint: FactoryGame/Content/FactoryGame/Buildable/Factory/Converter/Build_Converter
+  category: production
+
+# Logistics: use the square SM_ bodies, NOT the elongated *_static meshes (SPEC.md 12.7).
+splitter:
+  mesh: FactoryGame/Content/FactoryGame/Buildable/Factory/CA_Splitter/Mesh/SM_Splitter_01
+  blueprint: FactoryGame/Content/FactoryGame/Buildable/Factory/CA_Splitter/Build_ConveyorAttachmentSplitter
+  category: logistics
+
+merger:
+  mesh: FactoryGame/Content/FactoryGame/Buildable/Factory/CA_Merger/Mesh/SM_Merger_01
+  blueprint: FactoryGame/Content/FactoryGame/Buildable/Factory/CA_Merger/Build_ConveyorAttachmentMerger
+  category: logistics

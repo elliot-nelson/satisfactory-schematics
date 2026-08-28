@@ -1,0 +1,44 @@
+# Tileable / architectural pieces and shared connector meshes.
+#
+# These are extracted like buildings but have no clearance/ports of their own. Two sections:
+#
+#   segments:    belt/pipe spline tiles, pipe junctions, and steel beams. Rendered as tiled
+#                runs / bent corners / as-is (see SPEC.md 12.9). `kind` drives render behavior
+#                in a later phase; extraction only needs mesh + name (the map key).
+#   connectors:  the shared FactoryInputs "mouth" plates that some buildings attach at each
+#                I/O port (today only the particle accelerator). The stem MUST equal the mesh
+#                leaf so a blueprint component's mesh reference maps to its .glb (SPEC.md 12.12).
+#
+# Extracted into build/01-extract/models/segments/ and .../connectors/ respectively, so the
+# top-level machine loop ignores them.
+
+segments:
+  belt_segment:
+    mesh: FactoryGame/Content/FactoryGame/Buildable/Factory/ConveyorBeltMk1/Mesh/SM_ConveyorBelt_Mk1
+    kind: belt # spline tile -> straight runs + 90-deg corners
+  pipe_segment:
+    mesh: FactoryGame/Content/FactoryGame/Buildable/Factory/Pipeline/Mesh/Pipeline
+    kind: pipe # spline tile -> straight runs + 90-deg corners
+  pipe_junction_cross:
+    mesh: FactoryGame/Content/FactoryGame/Buildable/Factory/PipeJunction/Mesh/SM_Pipe_Junction_Cross_01
+    kind: junction # rendered as-is
+  pipe_junction_t:
+    mesh: FactoryGame/Content/FactoryGame/Buildable/Factory/PipeJunction/Mesh/SM_PipeJunction_T_01
+    kind: junction # rendered as-is
+  painted_beam:
+    mesh: FactoryGame/Content/FactoryGame/Buildable/Building/Pillars/Mesh/SM_BeamPainted_01
+    kind: beam # extrudes along local Z -> tiled to length
+  cross_beam:
+    mesh: FactoryGame/Content/FactoryGame/Buildable/Building/Pillars/Mesh/SM_Beam_01
+    kind: beam # extrudes along local Z -> tiled to length
+  beam_connector:
+    mesh: FactoryGame/Content/FactoryGame/Buildable/Building/Pillars/Mesh/SM_ConnectionCube_01
+    kind: connector-cube # rendered as-is
+
+connectors:
+  SM_Input_01:
+    mesh: FactoryGame/Content/FactoryGame/Buildable/Factory/FactoryInputs/Mesh/SM_Input_01
+  SM_Output_01:
+    mesh: FactoryGame/Content/FactoryGame/Buildable/Factory/FactoryInputs/Mesh/SM_Output_01
+  SM_Pipe_InPut_01:
+    mesh: FactoryGame/Content/FactoryGame/Buildable/Factory/FactoryInputs/Mesh/SM_Pipe_InPut_01
