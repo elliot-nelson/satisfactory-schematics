@@ -1,0 +1,55 @@
+# Root configuration for the Satisfactory sprites pipeline.
+#
+# `sat doctor` and every pipeline stage read (and validate) this file. The game/engine
+# versions below are what the extractor is proven against -- doctor HARD-GATES the installed
+# game against `game.version` / `game.engineVersion` because CUE4Parse's settings are matched
+# to exactly this build (a wrong version silently misreads mesh bytes; see SPEC.md 12.1).
+
+game:
+  version: "1.2.4.0" # <- doctor hard-stops if the installed game differs
+  engineVersion: "5.6.1" # UE 5.6.1 (Major.Minor.Patch of the game's *.version file)
+  appId: 526870 # Satisfactory (SteamCMD)
+  path: null # explicit install path; null -> auto-detect (env SAT_GAME_DIR, ./game, ../game)
+  requires: # paths doctor expects to exist under the install
+    - "FactoryGame/Content/Paks"
+    - "CommunityResources/FactoryGame.usmap"
+    - "CommunityResources/CustomVersions.json"
+    - "CommunityResources/Docs/en-US.json"
+    - "Engine/Binaries/Win64"
+
+extractor: # the .NET / CUE4Parse pillar (Phase 3; doctor only reports readiness for now)
+  cue4parse:
+    commit: "7ff8701"
+    ue: "GAME_UE5_6"
+    packageFileVersion: 1017 # OS_SUB_OBJECT_SHADOW_SERIALIZATION
+    texturePlatform: "DesktopMobile"
+  skipNative: true # CUE4PARSE_SKIP_NATIVE=true (ACL fails on clang)
+  oodle: # baked into the Docker image (SPEC.md 6.4)
+    url: "https://github.com/WorkingRobot/OodleUE/releases/download/2026-01-25-1223/gcc-x64-release.zip"
+    entry: "lib/liboodle-data-shared.so"
+  zlib:
+    url: "https://github.com/NotOfficer/Zlib-ng.NET/releases/download/1.0.0/libz-ng.so.gz"
+
+tools: # doctor checks presence/version + offers installs
+  docker:
+    minVersion: "24"
+  blender:
+    version: "5.2" # expected major.minor
+    env: "BLENDER" # env var that may point at the binary
+  potrace:
+    brew: "potrace"
+  rsvg:
+    brew: "librsvg"
+    bin: "rsvg-convert"
+  dotnet:
+    optional: true # only needed for native extractor development; docker needs none on host
+
+render:
+  ppm: 20 # 1 m = 20 px = one Excalidraw cell
+  grid: 1.0 # meters
+  metersPerUnit: 1.0 # glTF is already meters (SPEC.md 12.2)
+  views: ["top", "front", "back", "left", "right"]
+  defaultTheme: "blue-schematic"
+
+buildings: "config/buildings.yaml" # single source of truth (Phase 1)
+segments: "config/segments.yaml"

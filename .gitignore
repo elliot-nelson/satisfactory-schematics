@@ -1,0 +1,23 @@
+# Generated pipeline trees (never committed)
+build/
+dist/
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# .NET (extractor, added in Phase 3)
+bin/
+obj/
+
+# Generated / large assets
+*.glb
+*.gltf
+*.png
+
+# OS
+.DS_Store

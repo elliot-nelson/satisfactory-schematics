@@ -1,0 +1,35 @@
+#!/usr/bin/env python3
+"""Root launcher for the `sat` CLI.
+
+Kept in Python (not bash) per the project's language policy. It re-execs into the
+uv-managed environment (which auto-syncs deps), falls back to an existing `.venv`, and
+otherwise tells the user how to install `uv`.
+"""
+
+from __future__ import annotations
+
+import os
+import shutil
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent
+
+
+def main() -> None:
+    os.chdir(ROOT)
+    uv = shutil.which("uv")
+    if uv:
+        os.execvp(uv, [uv, "run", "python", "-m", "src.main", *sys.argv[1:]])
+    venv_py = ROOT / ".venv" / "bin" / "python"
+    if venv_py.exists():
+        os.execvp(str(venv_py), [str(venv_py), "-m", "src.main", *sys.argv[1:]])
+    sys.exit(
+        "uv not found and no .venv present.\n"
+        "  Install uv:  brew install uv   (https://docs.astral.sh/uv/)\n"
+        "  Then run:    ./sat doctor"
+    )
+
+
+if __name__ == "__main__":
+    main()
