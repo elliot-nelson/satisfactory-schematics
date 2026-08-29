@@ -40,7 +40,7 @@ def _read_alpha(png_path: Path) -> np.ndarray | None:
 def _manifests(plan: BuildPlan) -> list[Path]:
     if not MANIFEST_DIR.is_dir():
         raise StageError(
-            f"no render manifests at {MANIFEST_DIR}. Run `./sat build` (render) first."
+            f"no render manifests at {MANIFEST_DIR}. Run `./schematic build` (render) first."
         )
     found = sorted(MANIFEST_DIR.glob("*.json"))
     if plan.only:

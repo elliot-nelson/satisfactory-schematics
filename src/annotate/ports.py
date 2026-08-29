@@ -3,16 +3,15 @@
 The manifest's ``ports_px`` lists each visible port as a pixel rect with ``role`` (input/output/
 power), ``kind`` (belt/pipe/power), and ``face_on`` (whether the camera sees the mouth head-on or
 edge-on). We draw a crisp rounded-square + flow glyph for face-on belts, a thin bar for edge-on
-belts, a flat-filled circle for face-on pipes, a radial-gradient bulged ellipse for edge-on pipes
-(so a pipe seen from the side reads as a round tube in cross-section), and a FICSIT-orange lightning
-bolt for the power connector (a positional point marker, no flow direction). Ported from the old
-``svg_export.svg_ports``; the legacy PIL raster stamp (``tools/draw_ports.py``) is not carried since
-the SVG path is the official artifact.
+belts, a flat-filled circle for face-on pipes, a flat-filled bulged ellipse for edge-on pipes
+(so a pipe seen from the side still reads as a round tube in cross-section), and a FICSIT-orange
+lightning bolt for the power connector (a positional point marker, no flow direction). Ported from
+the old ``svg_export.svg_ports``; the legacy PIL raster stamp (``tools/draw_ports.py``) is not
+carried since the SVG path is the official artifact.
 """
 
 from __future__ import annotations
 
-import colorsys
 from typing import Any
 
 Rgb = tuple[int, int, int]
@@ -85,21 +84,10 @@ def _power_bolt(x0: float, y0: float, x1: float, y1: float, color: str) -> str:
     )
 
 
-def _toward_white(rgb: Rgb, desat: float = 0.4, lighten: float = 0.6) -> Rgb:
-    """Push a color toward white (drop saturation, lift lightness) for the pipe gradient center."""
-    r, g, b = (c / 255.0 for c in rgb)
-    hue, lgt, sat = colorsys.rgb_to_hls(r, g, b)
-    sat *= 1.0 - desat
-    lgt = lgt + (1.0 - lgt) * lighten
-    r, g, b = colorsys.hls_to_rgb(hue, lgt, sat)
-    return (round(r * 255), round(g * 255), round(b * 255))
-
-
 def ports_svg(ports_px: list[dict[str, Any]], w_img: int, h_img: int, in_rgb: Rgb,
               out_rgb: Rgb, power_rgb: Rgb) -> str:  # fmt: skip
-    """Return the SVG markup (``<defs>`` + shapes) for every visible port in ``ports_px``."""
+    """Return the SVG markup (shapes) for every visible port in ``ports_px``."""
     out: list[str] = []
-    pipe_roles: set[str] = set()  # roles needing a radial-gradient def (bright center -> rim)
     for p in ports_px:
         role = p["role"]
         x0, y0, x1, y1 = _norm(p["rect"])
@@ -122,24 +110,23 @@ def ports_svg(ports_px: list[dict[str, Any]], w_img: int, h_img: int, in_rgb: Rg
 
         # Pipes reuse the belt marker SHAPE. Face-on: a flat-filled circle (looking straight down
         # the tube, there is no rounded highlight to fake). Edge-on (seen from the top): a bar that
-        # bulges thicker with a radial gradient (bright, desaturated center -> saturated rim) so it
-        # reads as a round tube in cross-section.
+        # bulges thicker into a flat-filled ellipse so it still reads as a round tube in cross-section.
         if p.get("kind") == "pipe":
             if p.get("face_on"):
                 rad = max(3.0, min(w, h) / 2)
                 fill = f'fill="{stroke}" fill-opacity="0.216"'
                 out.append(f'<circle cx="{cx:.1f}" cy="{cy:.1f}" r="{rad:.1f}" {edge} {fill}/>')
             else:
-                pipe_roles.add(role)
                 bulge = 3.5  # center half-thickness; belt bar is 2.0, so a pipe swells a bit
                 if w < h:  # bar runs vertically
                     rx, ry = bulge, max(4.0, h / 2)
                 else:  # bar runs horizontally
                     rx, ry = max(4.0, w / 2), bulge
                 thin = f'stroke="{stroke}" stroke-opacity="0.92" stroke-width="1"'
+                fill = f'fill="{stroke}" fill-opacity="0.216"'
                 out.append(
                     f'<ellipse cx="{cx:.1f}" cy="{cy:.1f}" rx="{rx:.1f}" ry="{ry:.1f}" '
-                    f'{thin} fill="url(#pipegrad_{role})"/>'
+                    f'{thin} {fill}/>'
                 )
         elif p.get("face_on"):
             fill = f'fill="{stroke}" fill-opacity="0.216"'
@@ -161,18 +148,4 @@ def ports_svg(ports_px: list[dict[str, Any]], w_img: int, h_img: int, in_rgb: Rg
                 f'stroke-opacity="0.92" stroke-width="1"/>'
             )
 
-    defs = []
-    for role in sorted(pipe_roles):
-        rgb = in_rgb if role == "input" else out_rgb
-        cen = _toward_white(rgb)
-        cc = f"rgb({cen[0]},{cen[1]},{cen[2]})"
-        rc = f"rgb({rgb[0]},{rgb[1]},{rgb[2]})"
-        defs.append(
-            f'<radialGradient id="pipegrad_{role}" cx="50%" cy="50%" r="50%">'
-            f'<stop offset="0%" stop-color="{cc}" stop-opacity="0.92"/>'
-            f'<stop offset="55%" stop-color="{cc}" stop-opacity="0.55"/>'
-            f'<stop offset="100%" stop-color="{rc}" stop-opacity="0.75"/>'
-            f"</radialGradient>"
-        )
-    prefix = ("<defs>" + "".join(defs) + "</defs>") if defs else ""
-    return prefix + "".join(out)
+    return "".join(out)

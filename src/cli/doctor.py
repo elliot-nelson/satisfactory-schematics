@@ -409,7 +409,7 @@ def check_extractor_ready() -> Check:
         return Check(
             "extractor (CUE4Parse)",
             Status.WARN,
-            "vendored but sf-extract image not built (SF_REBUILD=1 ./sat extract)",
+            "vendored but sf-extract image not built (SF_REBUILD=1 ./schematic extract)",
             required=False,
         )
     return Check("extractor (CUE4Parse)", Status.OK, "vendored + image built", required=False)
@@ -484,7 +484,7 @@ def _collect(cfg: Config | None, cfg_err: str | None) -> list[Check]:
 
 
 def _render_table(checks: list[Check]) -> None:
-    table = Table(title="sat doctor", show_lines=False, expand=True)
+    table = Table(title="schematic doctor", show_lines=False, expand=True)
     table.add_column("Check", style="bold", no_wrap=True)
     table.add_column("Status", no_wrap=True)
     table.add_column("Detail", overflow="fold")

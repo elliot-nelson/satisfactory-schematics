@@ -20,7 +20,7 @@ LOCAL_CONFIG_PATH = REPO_ROOT / "config" / "config.local.yaml"
 _LOCAL_HEADER = (
     "# config/config.local.yaml -- machine-local overrides + cache (NOT committed).\n"
     "# Deep-merged over config/config.yaml at load time (local values win).\n"
-    "# Partly managed by `sat doctor` (e.g. the detected game path); safe to hand-edit.\n"
+    "# Partly managed by `schematic doctor` (e.g. the detected game path); safe to hand-edit.\n"
 )
 
 

@@ -1,4 +1,4 @@
-"""The ``sat`` CLI entrypoint.
+"""The ``schematic`` CLI entrypoint.
 
 Two pipeline commands: ``extract`` (the only game-reliant step) and ``build`` (everything after
 it). ``build`` currently runs the Blender raster stage; later stages fill in behind it. Plus the
@@ -178,8 +178,8 @@ def upload(
 
 
 def main() -> None:
-    """Console-script + ``python -m`` entrypoint. Forces the program name to ``sat``."""
-    app(prog_name="sat")
+    """Console-script + ``python -m`` entrypoint. Forces the program name to ``schematic``."""
+    app(prog_name="schematic")
 
 
 if __name__ == "__main__":

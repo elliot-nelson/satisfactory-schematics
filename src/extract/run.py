@@ -57,7 +57,7 @@ class ExtractPlan:
 def _docker_ok() -> None:
     if subprocess.run(["docker", "info"], capture_output=True).returncode != 0:
         raise ExtractError(
-            "Docker is not available/running. Run `./sat doctor` (it can install Docker), "
+            "Docker is not available/running. Run `./schematic doctor` (it can install Docker), "
             "then start Docker Desktop."
         )
 
@@ -137,11 +137,11 @@ def _game_dir(cfg: Config) -> Path:
     game_dir, source = resolve_game_dir(cfg)
     if game_dir is None or not game_dir.is_dir():
         raise ExtractError(
-            "No valid Satisfactory install resolved. Run `./sat doctor` to locate/configure it."
+            "No valid Satisfactory install resolved. Run `./schematic doctor` to locate/configure it."
         )
     if source in ("config-missing", "env-missing"):
         raise ExtractError(
-            f"Configured game path does not exist: {game_dir}. Fix it or run `./sat doctor`."
+            f"Configured game path does not exist: {game_dir}. Fix it or run `./schematic doctor`."
         )
     return game_dir
 

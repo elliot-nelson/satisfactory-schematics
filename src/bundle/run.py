@@ -58,7 +58,7 @@ def run(cfg: Config, plan: BuildPlan) -> None:
     html_src = preview_src / "preview.html"
     json_src = preview_src / "preview.json"
     if not html_src.is_file() or not json_src.is_file():
-        raise StageError(f"no preview at {preview_src}. Run `./sat build` (preview) first.")
+        raise StageError(f"no preview at {preview_src}. Run `./schematic build` (preview) first.")
 
     dest = DIST_DIR / slug
     if dest.exists():  # clear ONLY this theme's dir, never touch other themes in dist/

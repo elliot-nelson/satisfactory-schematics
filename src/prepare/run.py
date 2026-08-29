@@ -50,7 +50,7 @@ def run(cfg: Config, plan: BuildPlan) -> None:
     ensure(PREPARE_DIR)
 
     if not RAW_PORTS.is_file():
-        raise StageError(f"{_rel(RAW_PORTS)} not found. Run `./sat extract` first.")
+        raise StageError(f"{_rel(RAW_PORTS)} not found. Run `./schematic extract` first.")
     raw = json.loads(RAW_PORTS.read_text(encoding="utf-8"))
     name_by_leaf = name_by_asset_leaf(catalog)
 
@@ -78,7 +78,7 @@ def run(cfg: Config, plan: BuildPlan) -> None:
     else:
         C.err_console.print(
             f"  [yellow]clearance skipped[/]: {_rel(DOCS)} missing "
-            "(re-run `./sat extract` to copy the game docs)."
+            "(re-run `./schematic extract` to copy the game docs)."
         )
 
     C.console.print(f"\n[green]Prepare complete[/] -> {_rel(PREPARE_DIR)}")

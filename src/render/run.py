@@ -40,13 +40,13 @@ def find_blender(cfg: Config) -> str:
             return c
     raise StageError(
         f"Blender not found (checked ${env_var}, PATH, /Applications). "
-        f"Run `./sat doctor` to install it, or set ${env_var}=/path/to/blender."
+        f"Run `./schematic doctor` to install it, or set ${env_var}=/path/to/blender."
     )
 
 
 def _models(plan: BuildPlan) -> list[Path]:
     if not MODELS_DIR.is_dir():
-        raise StageError(f"no extracted models at {MODELS_DIR}. Run `./sat extract` first.")
+        raise StageError(f"no extracted models at {MODELS_DIR}. Run `./schematic extract` first.")
     globbed = sorted(MODELS_DIR.glob("*.glb"))
     if plan.only:
         globbed = [p for p in globbed if p.stem in plan.only]

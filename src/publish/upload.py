@@ -1,6 +1,6 @@
 """Publish stage (host, pure Python + the ``gh`` CLI).
 
-``./sat upload <theme> <version>`` attaches the built deliverable zip
+``./schematic upload <theme> <version>`` attaches the built deliverable zip
 (``dist/<slug>/<slug>.zip``) to a GitHub Release as ``<slug>-<version>.zip``.
 
 The release **tag** is ``v<version>``, so multiple themes (or re-runs) all land on the *one* release
@@ -94,7 +94,7 @@ def run(theme: str, version: str) -> None:
 
     zip_src = DIST_DIR / slug / f"{slug}.zip"
     if not zip_src.is_file():
-        raise UploadError(f"no built zip at {zip_src}. Run `./sat build --theme {theme}` first.")
+        raise UploadError(f"no built zip at {zip_src}. Run `./schematic build --theme {theme}` first.")
 
     tag = f"v{version}"
     asset_name = f"{slug}-{version}.zip"
