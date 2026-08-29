@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Satisfactory &middot; {{TITLE}}</title>
+<style>
+{{CSS}}
+</style>
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="brand"><span class="dot"></span>
+      <div><h1>Satisfactory</h1><div class="slug">{{TITLE}} &middot; {{SLUG}}</div></div></div>
+    <div class="counts">
+      <span class="pill">{{N_CATS}} categories</span>
+      <span class="pill">{{N_BUILDS}} builds</span>
+      <span class="pill">{{N_VIEWS}} views</span>
+    </div>
+    <nav>{{SIDEBAR}}</nav>
+  </aside>
+  <main>{{MAIN}}</main>
+</div>
+<div class="lightbox" id="lb" aria-hidden="true">
+  <figure>
+    <div class="lb-stage"><img id="lb-img" src="" alt=""></div>
+    <figcaption><span class="lb-title" id="lb-title"></span>
+      <span class="lb-close">Esc / click to close</span></figcaption>
+  </figure>
+</div>
+<script>
+  // scrollspy: highlight the sidebar link for whichever build is in view
+  const links = new Map([...document.querySelectorAll('.side-cat a')]
+    .map(a => [a.dataset.target, a]));
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (!e.isIntersecting) return;
+      links.forEach(a => a.classList.remove('active'));
+      const a = links.get(e.target.id);
+      if (a) a.classList.add('active');
+    });
+  }, { rootMargin:'-10% 0px -80% 0px', threshold:0 });
+  document.querySelectorAll('section.build').forEach(s => io.observe(s));
+
+  // lightbox: click any card image to view it full size
+  const lb = document.getElementById('lb'), lbImg = document.getElementById('lb-img'),
+        lbTitle = document.getElementById('lb-title');
+  function openLb(img) {
+    lbImg.src = img.src; lbImg.alt = img.alt;
+    const dims = img.dataset.dims ? ' \u00b7 ' + img.dataset.dims : '';
+    lbTitle.textContent = (img.dataset.label || '') + ' \u2014 ' + (img.dataset.view || '') + dims;
+    lb.classList.add('open'); lb.setAttribute('aria-hidden', 'false');
+  }
+  function closeLb() { lb.classList.remove('open'); lb.setAttribute('aria-hidden', 'true'); lbImg.src = ''; }
+  document.querySelectorAll('.stage img').forEach(img =>
+    img.addEventListener('click', () => openLb(img)));
+  lb.addEventListener('click', closeLb);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLb(); });
+</script>
+</body>
+</html>

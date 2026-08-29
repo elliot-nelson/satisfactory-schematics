@@ -5,8 +5,7 @@ Stages are deliberately small and independently runnable (each is a plain ``run(
 function in its own ``src/<stage>/`` package). ``build`` runs them in order; the ``--from`` /
 ``--stage`` advanced flags let you resume from or isolate a single stage using existing artifacts.
 
-``prepare`` -> ``render`` -> ``finalize`` exist today; ``preview`` -> ``bundle`` slot in here as
-later phases land.
+The full order is ``prepare`` -> ``render`` -> ``finalize`` -> ``preview`` -> ``bundle``.
 """
 
 from __future__ import annotations
@@ -14,11 +13,13 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass
 
+from src.bundle import run as bundle_run
 from src.cli import console as C
 from src.cli.config import Config
 from src.common.plan import BuildPlan, StageError
 from src.finalize import run as finalize_run
 from src.prepare import run as prepare_run
+from src.preview import build_preview as preview_run
 from src.render import run as render_run
 
 
@@ -37,6 +38,18 @@ STAGES: list[Stage] = [
         "finalize",
         "assemble per-theme SVG (+ optional PNG)",
         finalize_run.run,
+        theme_dependent=True,
+    ),
+    Stage(
+        "preview",
+        "standalone viewer (preview.html + preview.json)",
+        preview_run.run,
+        theme_dependent=True,
+    ),
+    Stage(
+        "bundle",
+        "publish dist/<theme>/ (svg, png, preview, metadata) + zip",
+        bundle_run.run,
         theme_dependent=True,
     ),
 ]

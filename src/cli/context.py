@@ -15,6 +15,7 @@ PREPARE_DIR = BUILD_DIR / "02-prepare"
 RENDER_DIR = BUILD_DIR / "03-render"
 SVG_DIR = BUILD_DIR / "04-svg"  # per-theme: 04-svg/<theme>/<name>_<view>.svg
 PNG_DIR = BUILD_DIR / "05-png"  # per-theme (optional --png): 05-png/<theme>/<name>_<view>.png
+PREVIEW_DIR = BUILD_DIR / "06-preview"  # per-theme: 06-preview/<theme>/preview.{html,json}
 
 
 def ensure(path: Path) -> Path:
