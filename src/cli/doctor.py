@@ -195,7 +195,7 @@ def check_game_path(cfg: Config, game_dir: Path | None, source: str) -> Check:
         return Check(
             "game install",
             Status.FAIL,
-            "not found in config or any common location (see GETTING_STARTED.md 3)",
+            "not found in config or any common location (see DEVELOPER_GUIDE.md)",
             Fix(
                 "point at your install",
                 manual=(

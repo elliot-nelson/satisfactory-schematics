@@ -4,11 +4,39 @@
 
 ![Blender from the rear in Excalidraw Blue](./docs/blender_back.png)
 
-## How to use
+## Getting started
 
-Step 1
-Step 2
-Step 3
+1. Go to the [Releases page](https://github.com/elliot-nelson/satisfactory-schematics/releases) and select the most recent release.
+2. Pick one of the available themes and download the matching ZIP file.
+3. Unzip and open the `preview.html` in your local browser to view available images.
+4. Drag and drop the SVG file(s) or PNG file(s) into your diagramming tool of choice.
+
+That's it!
+
+## Themes
+
+There are a number of prebaked themes available for you to choose from.
+
+### Blue Schematic
+
+- Simple blue lines with a faded fill, green/red port markers, faint orange collision ticks.
+- Drawn at `1m = 20px`.
+
+### Blue Schematic (Clean)
+
+- Same as Blue Schematic, but no port or collision tick annotations.
+- Drawn at `1m = 20px`.
+
+### Blue Excalidraw
+
+- Similar to Blue Schematic.
+- Lines are drawn slightly thicker and have some randomized jitter, to match Excalidraw's hand-drawn look.
+- Drawn at `1m = 20px`.
+
+### Blue Excalidraw (Clean)
+
+- Blue Excalidraw, but no port or collision tick annotations.
+- Drawn at `1m = 20px`.
 
 ## Scale
 
@@ -28,37 +56,21 @@ Each building includes small corner ticks rendered in FICSIT orange, showing whe
 
 ![Assemblers showing tick markers in draw.io](./docs/drawio_assembler_ticks.png)
 
-## How to use these images
+## Views
 
-Turn a local **Satisfactory** install into true-to-scale orthographic blueprint **SVGs/PNGs**
-(top / front / back / left / right) for dropping into Excalidraw, draw.io, or Miro.
+- Most buildings have 5 orthographic views (top, front, back, left, right).
+  - Top-down view is oriented with inputs at the bottom, outputs at top.
+  - Front view is facing the output port(s).
+  - Back view is facing the input port(s).
+  - Left view is oriented with inputs on the left, outputs on the right.
+  - Right view is oriented with inputs on the right, outputs on the left.
 
-This is a clean, standards-enforced rebuild of the pipeline. See
-[`NEW_REPO_PLAN.md`](../NEW_REPO_PLAN.md) for the full plan and phase checklists, and
-[`SPEC.md`](../SPEC.md) / [`PIPELINE.md`](../PIPELINE.md) for the deep design + step map.
+- Some shapes e.g. belts, pipes, architectural elements, only need 2 views.
+  - Top-down view (looking head-on at a beam or pipe from above).
+  - Front view (looking at a beam or pipe from the side).
 
-> **Status:** Phase 0 (scaffolding) + Phase 2 (`doctor`) only. The pipeline stages are stubs.
+## Developer's Guide
 
-## Quickstart
-
-Full bootstrap (the few things doctor can't do for you) is in
-[`GETTING_STARTED.md`](GETTING_STARTED.md). The short version:
-
-```bash
-brew install uv          # bootstrap prerequisite (needs Homebrew first)
-./sat doctor             # check the machine + install what's missing (with confirmation)
-./sat doctor --fix       # auto-run the safe fixes (downloads, brew installs) after confirming
-```
-
-`doctor` verifies (and can install) Docker, Blender, potrace, rsvg, the Oodle/zlib libs, and
-**hard-stops if your installed game version does not match `config/config.yaml`** (`game.version`).
-
-## Dev
-
-```bash
-./sat check              # ruff check + ruff format --check (+ csharpier in Phase 3)
-./sat fix                # ruff --fix + ruff format
-```
-
-All tooling is Python (plus the C# extractor in Phase 3); there is no bash beyond the tiny
-`./sat` launcher, which is itself Python.
+Want to make your own theme, or enhance the look of the schematics some other way? Feel free to
+clone this repo locally and hack away. The [Developer Guide](DEVELOPER_GUIDE.md) covers setup,
+getting the game data, and how the pipeline works.
