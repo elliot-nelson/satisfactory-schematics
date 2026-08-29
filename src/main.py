@@ -103,10 +103,15 @@ def extract(
 
 @app.command()
 def build(
-    theme: str = typer.Option(None, "--theme", help="Theme to build (default: config default)."),
+    theme: str = typer.Option(
+        None,
+        "--theme",
+        help="Theme name (-> themes/<name>.yaml) or path to a theme file (default: from config).",
+    ),
     only: list[str] = typer.Option(None, "--only", help="Build only these building(s)."),
     views: str = typer.Option(None, "--views", help="Comma-separated view override."),
     force: bool = typer.Option(False, "--force", help="Redo work even if outputs exist."),
+    png: bool = typer.Option(False, "--png", help="Also rasterize each SVG to PNG (rsvg-convert)."),
     from_stage: str = typer.Option(None, "--from", help="[adv] Resume the pipeline at this stage."),
     stage: str = typer.Option(None, "--stage", help="[adv] Run just this one stage."),
 ) -> None:
@@ -126,6 +131,7 @@ def build(
             only=set(only or []),
             views=[v.strip() for v in views.split(",")] if views else None,
             force=force,
+            png=png,
             from_stage=from_stage,
             only_stage=stage,
         )

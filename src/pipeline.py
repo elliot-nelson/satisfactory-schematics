@@ -5,8 +5,8 @@ Stages are deliberately small and independently runnable (each is a plain ``run(
 function in its own ``src/<stage>/`` package). ``build`` runs them in order; the ``--from`` /
 ``--stage`` advanced flags let you resume from or isolate a single stage using existing artifacts.
 
-Only ``prepare`` and ``render`` exist today; ``annotate`` -> ``finalize`` -> ``preview`` ->
-``bundle`` slot in here as later phases land.
+``prepare`` -> ``render`` -> ``finalize`` exist today; ``preview`` -> ``bundle`` slot in here as
+later phases land.
 """
 
 from __future__ import annotations
@@ -17,6 +17,7 @@ from dataclasses import dataclass
 from src.cli import console as C
 from src.cli.config import Config
 from src.common.plan import BuildPlan, StageError
+from src.finalize import run as finalize_run
 from src.prepare import run as prepare_run
 from src.render import run as render_run
 
@@ -31,7 +32,13 @@ class Stage:
 
 STAGES: list[Stage] = [
     Stage("prepare", "game data -> JSON contracts", prepare_run.run),
-    Stage("render", "Blender rasters (theme-independent)", render_run.run),
+    Stage("render", "Blender rasters + strokes (theme-independent)", render_run.run),
+    Stage(
+        "finalize",
+        "assemble per-theme SVG (+ optional PNG)",
+        finalize_run.run,
+        theme_dependent=True,
+    ),
 ]
 
 STAGE_NAMES = [s.name for s in STAGES]

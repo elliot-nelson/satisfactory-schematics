@@ -1,0 +1,28 @@
+# Theme: Blue Schematic
+#
+# A theme controls the *look* of a finalize pass -- colors + which annotation layers are
+# drawn. `sat build --theme blue-schematic` reads this file and writes results into
+# build/04-svg/blue-schematic/ (and dist/blue-schematic/); the slug is this file's stem.
+# Copy this file to make a new theme -- the theme-independent intermediates (rasters,
+# strokes, manifests under build/03-render) are shared, so only the finalize pass repeats.
+theme:
+  name: Blue Schematic
+
+  # Line art + silhouette fill (the architect-blueprint body).
+  lineColor: "#1a478c"          # feature-edge line color
+  fillColor: "#1a478c"          # flat semi-transparent silhouette fill
+  fillAlpha: 0.30               # silhouette fill opacity (0..1)
+  lineWidth: 1.5                # feature-edge stroke width in px
+  jitter: 0.25                  # per-vertex hand-drawn wobble in px (0 = crisp)
+
+  # I/O port markers (red input / green output squares + circles). Set highlightPorts:
+  # false to omit them entirely.
+  highlightPorts: true
+  inputPortColor: "#c82828"
+  outputPortColor: "#28aa46"
+
+  # Clearance / collision-box footprint corner ticks. Set showCollisionBoxTicks: false to
+  # omit them.
+  showCollisionBoxTicks: true
+  collisionBoxColor: "#fa9549"
+  collisionBoxAlpha: 180        # tick opacity, 0..255

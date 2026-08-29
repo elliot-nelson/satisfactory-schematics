@@ -21,6 +21,7 @@ class BuildPlan:
     only:       limit work to these building names (empty == all).
     views:      override the config view list (None == config default).
     force:      redo work even when up-to-date outputs already exist.
+    png:        also rasterize each finished SVG to PNG (finalize stage).
     from_stage: (advanced) start the pipeline at this stage, reusing earlier build/ artifacts.
     only_stage: (advanced) run just this one stage.
     """
@@ -29,6 +30,7 @@ class BuildPlan:
     only: set[str] = field(default_factory=set)
     views: list[str] | None = None
     force: bool = False
+    png: bool = False
     from_stage: str | None = None
     only_stage: str | None = None
 

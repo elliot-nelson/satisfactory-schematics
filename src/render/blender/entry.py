@@ -1,8 +1,10 @@
 """Runs INSIDE Blender: ``blender -b -P entry.py -- <args>``.
 
 For one building ``.glb`` this produces, theme-independently:
-  * per-view **true-to-scale orthographic alpha-silhouette rasters** (Workbench over a transparent
-    film) into ``--outdir``, and
+  * per-view **true-to-scale orthographic alpha-silhouette rasters** (EEVEE over a transparent
+    film) into ``--outdir``,
+  * per-view **Freestyle feature-edge strokes** (``<name>_<view>.paths``) into ``--strokes-dir``
+    -- colorless polylines the finalize stage stitches + colors per theme, and
   * a **projection manifest** ``<name>.json`` into ``--manifest-dir`` -- the keystone that carries,
     per view, the pixel geometry finalize/annotate/preview need: grid cells, the clearance-box pixel
     rect (``clearance_px``) and the projected I/O-port pixel rects (``ports_px``).
@@ -10,8 +12,9 @@ For one building ``.glb`` this produces, theme-independently:
 To get those pixels right the mesh is first placed into the blueprint-root frame that ports.json /
 clearance.json live in: apply the mesh offset, draw any attached connector mouth-plates, apply the
 per-building ``annot`` correction, then canonicalize flow-through machines (OUTPUT=+Y / INPUT=-Y).
-Ported from the proven standalone ``render.py`` (SPEC.md 12.*). Freestyle line-art strokes and the
-final SVG assembly are a later (finalize) phase; this stage stops at the raster + manifest.
+Ported from the proven standalone ``render.py`` (SPEC.md 12.*). The final SVG assembly (traced fill
++ stitched strokes + overlays) is the separate pure-Python finalize phase; this stage stops at the
+theme-independent raster + strokes + manifest.
 
 Self-contained: imports only bpy / mathutils / stdlib (Blender runs it in its own interpreter).
 """
@@ -19,6 +22,7 @@ Self-contained: imports only bpy / mathutils / stdlib (Blender runs it in its ow
 import argparse
 import json
 import math
+import os
 import sys
 from pathlib import Path
 
@@ -47,8 +51,14 @@ def parse_args(argv):
     p = argparse.ArgumentParser(description="Orthographic raster + projection manifest.")
     p.add_argument("--input", required=True, help="Path to a .glb / .gltf.")
     p.add_argument("--outdir", required=True, help="Directory for <name>_<view>.png rasters.")
+    p.add_argument(
+        "--strokes-dir", required=True, help="Directory for <name>_<view>.paths strokes."
+    )
     p.add_argument("--manifest-dir", required=True, help="Directory for the <name>.json manifest.")
     p.add_argument("--name", required=True, help="Output stem (building key).")
+    p.add_argument(
+        "--crease-deg", type=float, default=70.0, help="Only capture creases sharper than this."
+    )
     p.add_argument("--views", default="top,front,back,left,right", help="Comma-separated views.")
     p.add_argument("--ppm", type=float, default=20.0, help="Pixels per meter.")
     p.add_argument("--grid", type=float, default=1.0, help="Grid-snap cell size in meters (0=off).")
@@ -357,13 +367,51 @@ def snap_ports_to_surface(mesh_objects, ports, band=1.0, reach=3.0):
 # --------------------------------------------------------------------------------------------------
 # render
 # --------------------------------------------------------------------------------------------------
-def setup_engine():
-    """Fast, colorless silhouette: Workbench over a transparent film -> alpha == coverage."""
+def _silhouette_material():
+    """A flat opaque emission material. With ``film_transparent`` the rendered alpha is then a clean
+    coverage silhouette (~1 where the mesh is, 0 elsewhere) for potrace to trace downstream. The
+    color is irrelevant -- only the alpha and the (colorless) Freestyle strokes are consumed."""
+    mat = bpy.data.materials.new("silhouette")
+    mat.use_nodes = True
+    nt = mat.node_tree
+    nt.nodes.clear()
+    out = nt.nodes.new("ShaderNodeOutputMaterial")
+    emi = nt.nodes.new("ShaderNodeEmission")
+    emi.inputs["Color"].default_value = (0.1, 0.28, 0.55, 1.0)
+    nt.links.new(emi.outputs[0], out.inputs["Surface"])
+    return mat
+
+
+def setup_engine(mesh_objects, crease_deg, strokes_module):
+    """EEVEE render of a colorless coverage silhouette (alpha == coverage via ``film_transparent``)
+    with Freestyle in SCRIPT mode capturing feature-edge strokes to ``$SF_SVG_PATHS``.
+
+    Both outputs are theme-independent: the raster is read only for its alpha (traced into the SVG
+    fill) and the strokes are plain polylines, so Blender runs once and finalize colors per theme.
+    Mirrors the proven ``render.py`` blueprint+SVG path (EEVEE, crease angle, SCRIPT module)."""
     scene = bpy.context.scene
-    scene.render.engine = "BLENDER_WORKBENCH"
+    scene.render.engine = "BLENDER_EEVEE"
     scene.render.film_transparent = True
     scene.render.image_settings.file_format = "PNG"
     scene.render.image_settings.color_mode = "RGBA"
+
+    mat = _silhouette_material()
+    for obj in mesh_objects:
+        obj.data.materials.clear()
+        obj.data.materials.append(mat)
+
+    scene.render.use_freestyle = True
+    view_layer = scene.view_layers[0]
+    view_layer.use_freestyle = True
+    fs = view_layer.freestyle_settings
+    fs.mode = "SCRIPT"
+    fs.crease_angle = math.radians(180.0 - crease_deg)
+    for module in list(fs.modules):
+        fs.modules.remove(module)
+    text = bpy.data.texts.load(strokes_module)
+    entry = fs.modules.new()
+    entry.script = text
+    entry.use = True
 
 
 def make_camera():
@@ -472,6 +520,12 @@ def render_view(cam_obj, mins, maxs, view_name, args, out_base, clearance_bu, po
     cam_obj.data.clip_start = 0.001
     cam_obj.data.clip_end = dist * 4.0 + 10.0
 
+    # Freestyle appends this view's strokes to a fresh .paths file (SCRIPT module reads the env).
+    strokes_path = Path(args.strokes_dir) / f"{args.name}_{view_name}.paths"
+    if strokes_path.exists():
+        strokes_path.unlink()
+    os.environ["SF_SVG_PATHS"] = str(strokes_path)
+
     out_path = Path(out_base) / f"{args.name}_{view_name}.png"
     scene.render.filepath = str(out_path)
     bpy.ops.render.render(write_still=True)
@@ -514,6 +568,7 @@ def main():
     argv = sys.argv[sys.argv.index("--") + 1 :] if "--" in sys.argv else []
     args = parse_args(argv)
     Path(args.outdir).mkdir(parents=True, exist_ok=True)
+    Path(args.strokes_dir).mkdir(parents=True, exist_ok=True)
     Path(args.manifest_dir).mkdir(parents=True, exist_ok=True)
     name = args.name
     inv = 1.0 / args.meters_per_unit
@@ -570,7 +625,8 @@ def main():
     if ports and not args.no_port_snap:
         snap_ports_to_surface(mesh_objects, ports)
 
-    setup_engine()
+    strokes_module = str(Path(__file__).resolve().parent / "freestyle.py")
+    setup_engine(mesh_objects, args.crease_deg, strokes_module)
     cam = make_camera()
     results = []
     for view in args.views.split(","):

@@ -23,6 +23,7 @@ ENTRY = Path(__file__).resolve().parent / "blender" / "entry.py"
 MODELS_DIR = EXTRACT_DIR / "models"
 CONNECTORS_DIR = EXTRACT_DIR / "models" / "connectors"
 RASTER_DIR = RENDER_DIR / "raster"
+STROKES_DIR = RENDER_DIR / "strokes"
 MANIFEST_DIR = RENDER_DIR / "manifests"
 
 
@@ -60,7 +61,11 @@ def _models(plan: BuildPlan) -> list[Path]:
 def _needs_render(name: str, views: list[str]) -> bool:
     if not (MANIFEST_DIR / f"{name}.json").exists():
         return True
-    return any(not (RASTER_DIR / f"{name}_{v}.png").exists() for v in views)
+    return any(
+        not (RASTER_DIR / f"{name}_{v}.png").exists()
+        or not (STROKES_DIR / f"{name}_{v}.paths").exists()
+        for v in views
+    )
 
 
 def _prepare_arg(flag: str, path: Path) -> list[str]:
@@ -74,6 +79,7 @@ def run(cfg: Config, plan: BuildPlan) -> None:
     views = plan.views or cfg.render.views
     models = _models(plan)
     ensure(RASTER_DIR)
+    ensure(STROKES_DIR)
     ensure(MANIFEST_DIR)
 
     rendered = 0
@@ -87,6 +93,7 @@ def run(cfg: Config, plan: BuildPlan) -> None:
             blender, "-b", "-P", str(ENTRY), "--",
             "--input", str(glb),
             "--outdir", str(RASTER_DIR),
+            "--strokes-dir", str(STROKES_DIR),
             "--manifest-dir", str(MANIFEST_DIR),
             "--name", name,
             "--views", ",".join(views),
