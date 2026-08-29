@@ -1,6 +1,6 @@
-"""Stage 2 driver: read ``build/01-extract/`` and write the four JSON contracts to
-``build/02-prepare/``. Pure Python, offline, whole-catalog (ignores ``--only``: the contract files
-are small and are meant to stay complete for the renderer)."""
+"""Prepare stage: read ``build/01-extract/`` and write the four JSON files the renderer needs into
+``build/02-prepare/``. Pure Python, offline, and always whole-catalog -- it ignores ``--only`` since
+these files are tiny and we want them complete for the renderer."""
 
 from __future__ import annotations
 
@@ -40,10 +40,10 @@ def _summary(kind: str, count: int, notes: list[str]) -> None:
 
 
 def run(cfg: Config, plan: BuildPlan) -> None:
-    """Generate clearance/ports/mesh_offsets/connectors JSON from the extract outputs.
+    """Turn the extract outputs into clearance/ports/mesh_offsets/connectors JSON.
 
-    ``plan`` is accepted for a uniform stage signature but intentionally unused: prepare is
-    whole-catalog and cheap, so it ignores ``--only`` to keep the contract files complete.
+    We take ``plan`` just to match the stage signature -- prepare is cheap and whole-catalog, so it
+    ignores ``--only`` and always writes the complete set.
     """
     del plan
     catalog = load_catalog(cfg)

@@ -8,7 +8,7 @@ was actually extracted (into ``build/01-extract/models/connectors/``).
 
 Transforms are in the blueprint-root frame (same as ports.json), NOT the body's mesh_offsets frame.
 
-Output contract: ``{name: [{mesh, loc:[x,y,z] m, yaw, pitch, roll}]}``.
+Output looks like: ``{name: [{mesh, loc:[x,y,z] m, yaw, pitch, roll}]}``.
 """
 
 from __future__ import annotations

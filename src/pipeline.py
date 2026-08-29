@@ -32,7 +32,7 @@ class Stage:
 
 
 STAGES: list[Stage] = [
-    Stage("prepare", "game data -> JSON contracts", prepare_run.run),
+    Stage("prepare", "game data -> the JSON the renderer needs", prepare_run.run),
     Stage("render", "Blender rasters + strokes (theme-independent)", render_run.run),
     Stage(
         "finalize",

@@ -1,9 +1,8 @@
-# Root configuration for the satisfactory-schematics pipeline.
+# Root config for the whole pipeline.
 #
-# `schematic doctor` and every pipeline stage read (and validate) this file. The game/engine
-# versions below are what the extractor is proven against -- doctor HARD-GATES the installed
-# game against `game.version` / `game.engineVersion` because CUE4Parse's settings are matched
-# to exactly this build (a wrong version silently misreads mesh bytes; see SPEC.md 12.1).
+# `schematic doctor` and every stage read (and validate) this file. The game/engine versions below
+# are what the extractor is proven against, so doctor hard-stops if your installed game doesn't
+# match -- CUE4Parse is tuned to this exact build, and a wrong version quietly misreads mesh bytes.
 
 game:
   version: "1.2.4.0" # <- doctor hard-stops if the installed game differs
@@ -17,14 +16,14 @@ game:
     - "CommunityResources/Docs/en-US.json"
     - "Engine/Binaries/Win64"
 
-extractor: # the .NET / CUE4Parse pillar (Phase 3; doctor only reports readiness for now)
+extractor: # the .NET / CUE4Parse side of things (doctor just reports readiness for now)
   cue4parse:
     commit: "7ff8701"
     ue: "GAME_UE5_6"
     packageFileVersion: 1017 # OS_SUB_OBJECT_SHADOW_SERIALIZATION
     texturePlatform: "DesktopMobile"
   skipNative: true # CUE4PARSE_SKIP_NATIVE=true (ACL fails on clang)
-  oodle: # baked into the Docker image (SPEC.md 6.4)
+  oodle: # baked into the Docker image
     url: "https://github.com/WorkingRobot/OodleUE/releases/download/2026-01-25-1223/gcc-x64-release.zip"
     entry: "lib/liboodle-data-shared.so"
   zlib:
@@ -47,9 +46,9 @@ tools: # doctor checks presence/version + offers installs
 render:
   ppm: 20 # 1 m = 20 px = one Excalidraw cell
   grid: 1.0 # meters
-  metersPerUnit: 1.0 # glTF is already meters (SPEC.md 12.2)
+  metersPerUnit: 1.0 # glTF is already in meters
   views: ["top", "front", "back", "left", "right"]
   defaultTheme: "blue-schematic"
 
-buildings: "config/buildings.yaml" # single source of truth (Phase 1)
+buildings: "config/buildings.yaml" # the list of buildings we render
 segments: "config/segments.yaml"

@@ -5,15 +5,15 @@ For one building ``.glb`` this produces, theme-independently:
     film) into ``--outdir``,
   * per-view **Freestyle feature-edge strokes** (``<name>_<view>.paths``) into ``--strokes-dir``
     -- colorless polylines the finalize stage stitches + colors per theme, and
-  * a **projection manifest** ``<name>.json`` into ``--manifest-dir`` -- the keystone that carries,
-    per view, the pixel geometry finalize/annotate/preview need: grid cells, the clearance-box pixel
-    rect (``clearance_px``) and the projected I/O-port pixel rects (``ports_px``).
+  * a **projection manifest** ``<name>.json`` into ``--manifest-dir`` -- the important one: per view
+    it carries the pixel geometry finalize/annotate/preview need: grid cells, the clearance-box
+    pixel rect (``clearance_px``) and the projected I/O-port pixel rects (``ports_px``).
 
-To get those pixels right the mesh is first placed into the blueprint-root frame that ports.json /
-clearance.json live in: apply the mesh offset, draw any attached connector mouth-plates, apply the
-per-building ``annot`` correction, then canonicalize flow-through machines (OUTPUT=+Y / INPUT=-Y).
-Ported from the proven standalone ``render.py`` (SPEC.md 12.*). The final SVG assembly (traced fill
-+ stitched strokes + overlays) is the separate pure-Python finalize phase; this stage stops at the
+To get those pixels right we first drop the mesh into the same blueprint-root frame that ports.json
+/ clearance.json use: apply the mesh offset, draw any attached connector mouth-plates, apply the
+per-building ``annot`` fixup, then canonicalize flow-through machines (OUTPUT=+Y / INPUT=-Y). Ported
+from the old standalone ``render.py``. Turning all this into the final SVG (traced fill + stitched
+strokes + overlays) is the separate pure-Python finalize phase; this stage stops at the
 theme-independent raster + strokes + manifest.
 
 Self-contained: imports only bpy / mathutils / stdlib (Blender runs it in its own interpreter).
@@ -35,7 +35,7 @@ PI = math.pi
 
 # Which world axes map to the image's horizontal/vertical, plus the camera orientation and the unit
 # offset direction it sits along. front/back and left/right are swapped vs the raw Blender axes so
-# the labels match Satisfactory's I/O convention (SPEC.md 12.8).
+# the labels line up with Satisfactory's own input/output convention.
 VIEWS = {
     "top":   {"euler": (0.0,     0.0,  0.0),     "offset": (0, 0, 1),  "h": "x", "v": "y"},
     "front": {"euler": (HALF_PI, 0.0,  PI),      "offset": (0, 1, 0),  "h": "x", "v": "z"},
@@ -69,7 +69,7 @@ def parse_args(argv):
         default=2.0,
         help="Drop stray geometry separated by a gap larger than this (m). 0=off.",
     )
-    # prepare-stage contracts (all optional; missing files degrade gracefully)
+    # prepare-stage files (all optional -- if one's missing we just carry on without it)
     p.add_argument("--clearance", default=None, help="clearance.json (in-game footprint boxes).")
     p.add_argument("--ports", default=None, help="ports.json (belt/pipe I/O).")
     p.add_argument("--mesh-offsets", default=None, help="mesh_offsets.json (blueprint placement).")
@@ -659,7 +659,7 @@ def main():
     # Canonical orientation for flow-through machines: send OUTPUT -> +Y (front). This runs even for
     # annot buildings -- annot only *co-locates* the port layer onto the body; canonicalizing then
     # rotates the whole assembly (body + ports + clearance, rigidly, keeping co-location) so the
-    # accelerator obeys the same front=outputs convention as every other machine (SPEC 12.13/15).
+    # accelerator ends up front=outputs like every other machine.
     if ports and not args.no_canonical:
         cyaw = canonical_yaw(ports)
         if cyaw:

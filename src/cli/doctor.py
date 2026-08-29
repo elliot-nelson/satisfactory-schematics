@@ -1,11 +1,10 @@
-"""The ``doctor`` routine: bring a brand-new machine up to spec.
+"""The ``doctor`` routine: get a brand-new machine ready to go.
 
-Assumes (almost) nothing is installed. Each check reports a status and, where possible, an
-auto-runnable or manual remediation. The **game-version gate** is special: on a mismatch it
-hard-stops and offers no fix, because the extractor is pinned to exactly one game/engine build
-(SPEC.md 12.1).
+Assumes (almost) nothing is installed. Each check reports a status and, where it can, a fix (either
+auto-runnable or a manual hint). The game-version gate is the odd one out: on a mismatch it just
+hard-stops with no fix, since the extractor is pinned to one exact game/engine build.
 
-macOS / Homebrew first; structured so Linux remediations can slot in later.
+macOS / Homebrew first, but structured so Linux fixes can slot in later.
 """
 
 from __future__ import annotations
@@ -254,7 +253,7 @@ def check_game_version(cfg: Config, game_dir: Path | None) -> Check:
         (
             f"MISMATCH: installed {found_game} (UE {found_engine}); "
             f"pinned {want_game} (UE {want_engine}). Extraction will misread meshes -- "
-            f"update the game to match, or bump config.yaml + re-validate CUE4Parse (SPEC 12.1)."
+            f"update the game to match, or bump config.yaml + re-check the CUE4Parse settings."
         ),
         required=True,
     )
@@ -359,7 +358,7 @@ def _download_fix(
 
 
 def check_native_libs(cfg: Config) -> Check:
-    """Oodle + zlib libs baked into the extractor image (SPEC 6.4). Auto-downloadable."""
+    """Oodle + zlib libs that get baked into the extractor image. We can auto-download these."""
     libs = DOCTOR_DIR / "libs"
     oodle = libs / "liboodle-data-shared.so"
     zlib = libs / "libz-ng.so"
@@ -380,7 +379,7 @@ def check_native_libs(cfg: Config) -> Check:
     return Check(
         "oodle + zlib libs",
         Status.WARN,
-        "not downloaded yet (baked into the extractor image at Phase 3)",
+        "not downloaded yet (they get baked into the extractor image)",
         Fix("download Oodle + zlib", run=run_all),
         required=False,
     )

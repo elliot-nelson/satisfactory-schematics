@@ -7,12 +7,12 @@ falling back to every box when a building has only soft boxes (splitters/mergers
 ``ExcludeForSnapping`` boxes are still counted -- "foundations may snap under this overhang", not
 "empty space".
 
-Each entry's 8 local box corners are transformed by Scale3D -> Rotation(conjugate) -> Translation,
-then reduced to axis-aligned world bounds (cm -> m). The stored rotation is parent<-local, so it
-must be inverted; applying it directly puts rotated arm segments (Particle Accelerator) far into
-empty space. See SPEC.md / the old build_clearance.py for the full validation notes.
+Each entry's 8 local box corners get transformed by Scale3D -> Rotation(conjugate) -> Translation,
+then squashed to axis-aligned world bounds (cm -> m). Heads up: the stored rotation is
+parent<-local, so it has to be inverted -- apply it directly and rotated arm segments (Particle
+Accelerator) fly off into empty space. The old build_clearance.py has the gory notes if you want.
 
-Output contract: ``{name: {min:[x,y,z] m, max:[x,y,z] m}}``.
+Output looks like: ``{name: {min:[x,y,z] m, max:[x,y,z] m}}``.
 """
 
 from __future__ import annotations

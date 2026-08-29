@@ -87,7 +87,7 @@ def build_image(*, rebuild: bool = False) -> None:
         str(REPO_ROOT),
     ]  # fmt: skip
     if rebuild:
-        cmd.insert(2, "--no-cache")  # avoid COPY-layer staleness (SPEC.md 6)
+        cmd.insert(2, "--no-cache")  # force a clean build so stale COPY layers don't linger
     if subprocess.run(cmd).returncode != 0:
         raise ExtractError("docker build failed (see output above).")
 

@@ -1,9 +1,9 @@
-# Standards self-enforcement. Installed by `sat doctor` (pre-commit install).
-# CSharpier for the C# extractor is added in Phase 3.
+# Keeps our own standards honest. Installed by `schematic doctor` (pre-commit install).
+# CSharpier for the C# extractor comes later.
 #
-# Ruff runs as a LOCAL hook via `uv run` so the hook uses the exact same ruff version and
-# pyproject config as `./sat check`/`./sat fix`. A pinned ruff-pre-commit `rev` would be a second
-# version to keep in sync and silently drifts (an old rev flagged the removed ANN101 rule).
+# Ruff runs as a LOCAL hook via `uv run` so it uses the exact same ruff version + pyproject config
+# as `./schematic check`/`./schematic fix`. Pinning a ruff-pre-commit `rev` would just be a second
+# version to keep in sync, and it drifts (an old rev once flagged the long-removed ANN101 rule).
 repos:
   - repo: local
     hooks:

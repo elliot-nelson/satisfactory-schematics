@@ -1,8 +1,8 @@
 """Host-side driver for the Blender render stage.
 
 Locates Blender, then for each extracted building body (``build/01-extract/models/*.glb``) spawns
-``blender -b -P blender/entry.py``, passing the prepare-stage contracts so the body is oriented
-into the blueprint frame. Blender writes per-view alpha silhouettes into ``build/03-render/raster/``
+``blender -b -P blender/entry.py``, passing the prepare-stage JSON so the body gets oriented into
+the blueprint frame. Blender writes per-view alpha silhouettes into ``build/03-render/raster/``
 and a projection manifest into ``build/03-render/manifests/``. Theme-independent and incremental
 (skips a model when its rasters + manifest already exist, unless ``force``).
 """
@@ -69,7 +69,7 @@ def _needs_render(name: str, views: list[str]) -> bool:
 
 
 def _prepare_arg(flag: str, path: Path) -> list[str]:
-    """Pass a prepare contract only if it exists (render degrades gracefully without it)."""
+    """Only pass a prepare file if it's actually there (render still works without it)."""
     return [flag, str(path)] if path.exists() else []
 
 

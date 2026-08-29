@@ -9,7 +9,7 @@ same building-local meters/blueprint frame as ports.json.
 The optional ``annot`` correction (a small port-layer rotate/shift, e.g. the Particle Accelerator)
 comes straight from the catalog (config/buildings.yaml) and is passed through here.
 
-Output contract: ``{name: {loc:[x,y,z] m, pitch, yaw, roll, annot?}}``.
+Output looks like: ``{name: {loc:[x,y,z] m, pitch, yaw, roll, annot?}}``.
 """
 
 from __future__ import annotations

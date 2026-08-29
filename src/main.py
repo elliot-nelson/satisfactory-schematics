@@ -1,8 +1,8 @@
 """The ``schematic`` CLI entrypoint.
 
-Two pipeline commands: ``extract`` (the only game-reliant step) and ``build`` (everything after
-it). ``build`` currently runs the Blender raster stage; later stages fill in behind it. Plus the
-dev helpers ``check`` / ``fix``.
+The two pipeline commands are ``extract`` (the one step that needs the game) and ``build``
+(everything after it, prepare -> ... -> bundle). ``upload`` ships a built zip to a GitHub Release,
+and ``check`` / ``fix`` are the dev lint helpers.
 """
 
 from __future__ import annotations
@@ -40,7 +40,7 @@ def _ruff(args: list[str]) -> int:
 
 @app.command()
 def check() -> None:
-    """Lint + format-check (ruff). CSharpier is wired in during Phase 3."""
+    """Lint + format-check (ruff). CSharpier for the C# extractor comes later."""
     rc = _ruff(["check", "."])
     rc |= _ruff(["format", "--check", "."])
     raise typer.Exit(1 if rc else 0)

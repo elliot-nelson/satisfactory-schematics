@@ -10,7 +10,7 @@ Power is kept as a ``kind:"power"`` marker (role ``"power"``): unlike belt/pipe 
 high on the body with no material-flow direction, so the renderer treats it as a positional point
 (no edge-snap, no facing cull) and the finalize overlay stamps it FICSIT orange.
 
-Output contract: ``{name: [{role, kind, pos:[x,y,z] m, yaw: deg}]}``.
+Output looks like: ``{name: [{role, kind, pos:[x,y,z] m, yaw: deg}]}``.
 """
 
 from __future__ import annotations

@@ -1,8 +1,7 @@
 """Load the building/segment/connector catalog from ``config/buildings.yaml`` + ``segments.yaml``.
 
-This is the single source of truth that replaces the old parallel lists (``buildings.txt``,
-``buildings.ports.txt``, ``segments.txt``, ``connectors.txt``). Every stage reads it through
-here so the maps can never drift.
+One list to rule them all -- every stage reads the catalog through here, so nothing can drift out of
+sync (this replaced a pile of parallel ``.txt`` files that always did).
 """
 
 from __future__ import annotations

@@ -1,16 +1,16 @@
-# Tileable / architectural pieces and shared connector meshes.
+# Tileable / architectural pieces and the shared connector meshes.
 #
-# These are extracted like buildings but have no clearance/ports of their own. Two sections:
+# Extracted like buildings, but these have no clearance/ports of their own. Two sections:
 #
-#   segments:    belt/pipe spline tiles, pipe junctions, and steel beams. Rendered as tiled
-#                runs / bent corners / as-is (see SPEC.md 12.9). `kind` drives render behavior
-#                in a later phase; extraction only needs mesh + name (the map key).
-#   connectors:  the shared FactoryInputs "mouth" plates that some buildings attach at each
-#                I/O port (today only the particle accelerator). The stem MUST equal the mesh
-#                leaf so a blueprint component's mesh reference maps to its .glb (SPEC.md 12.12).
+#   segments:    belt/pipe spline tiles, pipe junctions, and steel beams. Rendered as tiled runs /
+#                bent corners / as-is. `kind` drives how they render later; extraction just needs
+#                the mesh + name (the map key).
+#   connectors:  the shared FactoryInputs "mouth" plates some buildings stick on each I/O port
+#                (right now just the particle accelerator). The name MUST match the mesh leaf so a
+#                blueprint component's mesh reference can find its .glb.
 #
-# Extracted into build/01-extract/models/segments/ and .../connectors/ respectively, so the
-# top-level machine loop ignores them.
+# These land in build/01-extract/models/segments/ and .../connectors/, so the main building loop
+# skips right over them.
 
 segments:
   belt_segment:

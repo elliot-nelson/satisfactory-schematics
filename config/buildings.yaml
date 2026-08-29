@@ -1,19 +1,19 @@
-# Single source of truth for the buildings we extract + render.
+# The list of buildings we extract + render -- the one place to add/tweak one.
 #
 # Each entry:
-#   mesh:      in-pak asset path of the visual body mesh (no extension; SM_/SK_ prefix and a
-#              trailing .uasset are handled by the extractor). The map KEY is the friendly
-#              stem used everywhere downstream (.glb name, clearance/ports keys, manifest).
-#   blueprint: the Build_* blueprint package -- source of I/O ports + component transforms
-#              (via `--dump-ports`). The Docs ClassName (Build_<X>_C) is derived from the leaf.
-#   category:  preview grouping (production / logistics / architecture).
-#   annot:     OPTIONAL per-building port-layer correction (see SPEC.md 12.15). Consumed in a
-#              later phase; harmless to extraction.
+#   mesh:      in-pak path to the visual body mesh (no extension; the extractor handles the
+#              SM_/SK_ prefix and .uasset). The map KEY is the friendly name used everywhere
+#              downstream (.glb name, clearance/ports keys, manifest).
+#   blueprint: the Build_* package -- where the I/O ports + component transforms come from
+#              (via `--dump-ports`). The Docs ClassName (Build_<X>_C) comes from the leaf.
+#   category:  which preview section it lands in (production / logistics / architecture).
+#   annot:     OPTIONAL per-building port-layer fixup. Only used later in the pipeline; extraction
+#              doesn't care about it.
 #
 # Notes:
-#   - We use the "_static" visual meshes where they're the current in-game geometry; some
-#     buildings' SM_* meshes are the right body instead (e.g. splitter/merger squares, SPEC 12.7).
-#   - Confirm paths for a new game version with:  ./schematic extract --find <substr>
+#   - We use the "_static" meshes where those are the current in-game geometry; a few buildings
+#     want their SM_* mesh instead (splitter/merger squares, say).
+#   - Checking paths for a new game version? Try:  ./schematic extract --find <substr>
 
 constructor:
   mesh: FactoryGame/Content/FactoryGame/Buildable/Factory/ConstructorMk1/Mesh/ConstructorMk1_static
@@ -54,7 +54,7 @@ particle_accelerator:
   mesh: FactoryGame/Content/FactoryGame/Buildable/Factory/HadronCollider/Mesh/SM_HadronCollider_01
   blueprint: FactoryGame/Content/FactoryGame/Buildable/Factory/HadronCollider/Build_HadronCollider
   category: production
-  annot: { rot_deg: 180, shift: [4.5, 0, 0] } # SPEC.md 12.15
+  annot: { rot_deg: 180, shift: [4.5, 0, 0] } # its port layer needs a nudge to line up
 
 packager:
   mesh: FactoryGame/Content/FactoryGame/Buildable/Factory/Packager/Mesh/SM_Packager_01
@@ -66,7 +66,7 @@ converter:
   blueprint: FactoryGame/Content/FactoryGame/Buildable/Factory/Converter/Build_Converter
   category: production
 
-# Logistics: use the square SM_ bodies, NOT the elongated *_static meshes (SPEC.md 12.7).
+# Logistics: use the square SM_ bodies, NOT the stretched-out *_static meshes.
 splitter:
   mesh: FactoryGame/Content/FactoryGame/Buildable/Factory/CA_Splitter/Mesh/SM_Splitter_01
   blueprint: FactoryGame/Content/FactoryGame/Buildable/Factory/CA_Splitter/Build_ConveyorAttachmentSplitter
