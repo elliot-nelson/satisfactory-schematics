@@ -106,28 +106,31 @@ def build(
     theme: str = typer.Option(None, "--theme", help="Theme to build (default: config default)."),
     only: list[str] = typer.Option(None, "--only", help="Build only these building(s)."),
     views: str = typer.Option(None, "--views", help="Comma-separated view override."),
-    force: bool = typer.Option(False, "--force", help="Re-render even if rasters exist."),
+    force: bool = typer.Option(False, "--force", help="Redo work even if outputs exist."),
+    from_stage: str = typer.Option(None, "--from", help="[adv] Resume the pipeline at this stage."),
+    stage: str = typer.Option(None, "--stage", help="[adv] Run just this one stage."),
 ) -> None:
-    """Turn extracted models into schematics (everything after extract).
+    """Turn extracted models into schematics: everything after extract.
 
-    Currently runs the Blender raster stage; the remaining stages (prepare -> annotate ->
-    finalize -> preview -> bundle) are filled in during later phases.
+    Runs the pipeline stages in order (prepare -> render -> ...). Each stage lives in ``src/`` and
+    is individually runnable via ``--stage``/``--from``; usually you just ``build --theme T``.
     """
     from src.cli.config import ConfigError, load_config
-    from src.render.run import RenderError, RenderPlan, run_render
+    from src.common.plan import BuildPlan, StageError
+    from src.pipeline import run_build
 
     try:
         cfg = load_config()
-        _ = theme or cfg.render.defaultTheme  # threaded through once themed stages exist
-        run_render(
-            cfg,
-            RenderPlan(
-                only=set(only or []),
-                views=[v.strip() for v in views.split(",")] if views else None,
-                force=force,
-            ),
+        plan = BuildPlan(
+            theme=theme or cfg.render.defaultTheme,
+            only=set(only or []),
+            views=[v.strip() for v in views.split(",")] if views else None,
+            force=force,
+            from_stage=from_stage,
+            only_stage=stage,
         )
-    except (RenderError, ConfigError) as exc:
+        run_build(cfg, plan)
+    except (StageError, ConfigError) as exc:
         C.err_console.print(f"[red]build failed:[/] {exc}")
         raise typer.Exit(1) from exc
 

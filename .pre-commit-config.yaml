@@ -1,12 +1,24 @@
 # Standards self-enforcement. Installed by `sat doctor` (pre-commit install).
 # CSharpier for the C# extractor is added in Phase 3.
+#
+# Ruff runs as a LOCAL hook via `uv run` so the hook uses the exact same ruff version and
+# pyproject config as `./sat check`/`./sat fix`. A pinned ruff-pre-commit `rev` would be a second
+# version to keep in sync and silently drifts (an old rev flagged the removed ANN101 rule).
 repos:
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.6.9
+  - repo: local
     hooks:
       - id: ruff
-        args: ["--fix"]
+        name: ruff (lint + autofix)
+        entry: uv run ruff check --fix
+        language: system
+        types_or: [python, pyi]
+        require_serial: true
       - id: ruff-format
+        name: ruff (format)
+        entry: uv run ruff format
+        language: system
+        types_or: [python, pyi]
+        require_serial: true
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.6.0
     hooks:

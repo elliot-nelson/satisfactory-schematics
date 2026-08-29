@@ -11,27 +11,16 @@ from __future__ import annotations
 import os
 import shutil
 import subprocess
-from dataclasses import dataclass, field
 from pathlib import Path
 
 from src.cli import console as C
 from src.cli.config import Config
 from src.cli.context import EXTRACT_DIR, RENDER_DIR, ensure
+from src.common.plan import BuildPlan, StageError
 
 ENTRY = Path(__file__).resolve().parent / "blender" / "entry.py"
 MODELS_DIR = EXTRACT_DIR / "models"
 RASTER_DIR = RENDER_DIR / "raster"
-
-
-class RenderError(Exception):
-    """User-actionable render failure (Blender missing, no models, a failed render)."""
-
-
-@dataclass
-class RenderPlan:
-    only: set[str] = field(default_factory=set)
-    views: list[str] | None = None  # None -> config default
-    force: bool = False
 
 
 def find_blender(cfg: Config) -> str:
@@ -45,23 +34,23 @@ def find_blender(cfg: Config) -> str:
     for c in candidates:
         if c and Path(c).exists():
             return c
-    raise RenderError(
+    raise StageError(
         f"Blender not found (checked ${env_var}, PATH, /Applications). "
         f"Run `./sat doctor` to install it, or set ${env_var}=/path/to/blender."
     )
 
 
-def _models(plan: RenderPlan) -> list[Path]:
+def _models(plan: BuildPlan) -> list[Path]:
     if not MODELS_DIR.is_dir():
-        raise RenderError(f"no extracted models at {MODELS_DIR}. Run `./sat extract` first.")
+        raise StageError(f"no extracted models at {MODELS_DIR}. Run `./sat extract` first.")
     globbed = sorted(MODELS_DIR.glob("*.glb"))
     if plan.only:
         globbed = [p for p in globbed if p.stem in plan.only]
         missing = plan.only - {p.stem for p in globbed}
         if missing:
-            raise RenderError(f"--only not found in {MODELS_DIR}: {', '.join(sorted(missing))}")
+            raise StageError(f"--only not found in {MODELS_DIR}: {', '.join(sorted(missing))}")
     if not globbed:
-        raise RenderError(f"no .glb bodies to render in {MODELS_DIR}.")
+        raise StageError(f"no .glb bodies to render in {MODELS_DIR}.")
     return globbed
 
 
@@ -69,7 +58,7 @@ def _needs_render(name: str, views: list[str]) -> bool:
     return any(not (RASTER_DIR / f"{name}_{v}.png").exists() for v in views)
 
 
-def run_render(cfg: Config, plan: RenderPlan) -> None:
+def run(cfg: Config, plan: BuildPlan) -> None:
     """Render alpha-silhouette rasters for the selected building bodies."""
     blender = find_blender(cfg)
     views = plan.views or cfg.render.views
@@ -97,7 +86,7 @@ def run_render(cfg: Config, plan: RenderPlan) -> None:
         if proc.returncode != 0:
             C.err_console.print(proc.stdout)
             C.err_console.print(proc.stderr)
-            raise RenderError(f"Blender failed on {name} (exit {proc.returncode}).")
+            raise StageError(f"Blender failed on {name} (exit {proc.returncode}).")
         for line in proc.stdout.splitlines():
             if line.startswith("[raster]"):
                 C.console.print(f"  {line[9:]}")
