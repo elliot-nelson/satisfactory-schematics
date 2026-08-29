@@ -20,4 +20,4 @@ theme:
   outputPortColor: "#28aa46"
   showCollisionBoxTicks: false
   collisionBoxColor: "#fa9549"
-  collisionBoxAlpha: 180        # tick opacity, 0..255
+  collisionBoxAlpha: 0.70        # tick opacity (0..1)

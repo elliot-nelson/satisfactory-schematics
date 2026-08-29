@@ -62,13 +62,20 @@ class Theme(BaseModel):
     powerPortColor: str = "#fa9549"  # FICSIT orange power-connector glyph
     showCollisionBoxTicks: bool = True
     collisionBoxColor: str
-    collisionBoxAlpha: int = 180
+    collisionBoxAlpha: float = 0.70  # 0..1, like fillAlpha (scaled to 0..255 for the tick tool)
 
     @field_validator("lineColor", "fillColor", "inputPortColor", "outputPortColor",
                      "powerPortColor", "collisionBoxColor")  # fmt: skip
     @classmethod
     def _valid_hex(cls, v: str) -> str:
         _hex_rgb(v)  # raises on bad input
+        return v
+
+    @field_validator("fillAlpha", "collisionBoxAlpha")
+    @classmethod
+    def _unit_alpha(cls, v: float) -> float:
+        if not 0.0 <= v <= 1.0:
+            raise ValueError(f"alpha must be within 0..1, got {v}")
         return v
 
     def style(self, potrace: str = "potrace") -> dict[str, Any]:
@@ -89,7 +96,7 @@ class Theme(BaseModel):
             "in_rgb": _hex_rgb(self.inputPortColor),
             "out_rgb": _hex_rgb(self.outputPortColor),
             "power_rgb": _hex_rgb(self.powerPortColor),
-            "tick_rgba": (*_hex_rgb(self.collisionBoxColor), self.collisionBoxAlpha),
+            "tick_rgba": (*_hex_rgb(self.collisionBoxColor), round(self.collisionBoxAlpha * 255)),
             "potrace": potrace,
         }
 
@@ -111,6 +118,31 @@ def resolve_theme(ref: str) -> Path:
     available = sorted(p.stem for p in THEMES_DIR.glob("*.yaml")) if THEMES_DIR.is_dir() else []
     hint = f" Available in themes/: {', '.join(available)}." if available else ""
     raise ThemeError(f"theme '{ref}' not found -- not a file, and no themes/{name}.{hint}")
+
+
+def list_theme_names() -> list[str]:
+    """Every theme in ``themes/`` by bare name (file stem), sorted. Raises if none exist."""
+    names = sorted(p.stem for p in THEMES_DIR.glob("*.yaml")) if THEMES_DIR.is_dir() else []
+    if not names:
+        raise ThemeError(f"no themes found in {THEMES_DIR}/. Add a ``<name>.yaml`` first.")
+    return names
+
+
+def select_themes(theme: str | None, all_themes: bool, *, default: str | None = None) -> list[str]:
+    """Resolve a ``--theme`` / ``--all-themes`` pair into the list of theme refs to act on.
+
+    ``--all-themes`` (every theme in ``themes/``) is mutually exclusive with ``--theme``. With
+    neither, falls back to ``default`` if given, else raises. Raises :class:`ThemeError` on any
+    conflict or when nothing resolves.
+    """
+    if all_themes and theme:
+        raise ThemeError("--all-themes and --theme are mutually exclusive.")
+    if all_themes:
+        return list_theme_names()
+    chosen = theme or default
+    if not chosen:
+        raise ThemeError("a theme is required: pass --theme <name> or --all-themes.")
+    return [chosen]
 
 
 def load_theme(ref: str) -> Theme:

@@ -108,6 +108,11 @@ def build(
         "--theme",
         help="Theme name (-> themes/<name>.yaml) or path to a theme file (default: from config).",
     ),
+    all_themes: bool = typer.Option(
+        False,
+        "--all-themes",
+        help="Build every theme in themes/ in turn (incompatible with --theme).",
+    ),
     only: list[str] = typer.Option(None, "--only", help="Build only these building(s)."),
     views: str = typer.Option(None, "--views", help="Comma-separated view override."),
     force: bool = typer.Option(False, "--force", help="Redo work even if outputs exist."),
@@ -121,41 +126,53 @@ def build(
     """
     from src.cli.config import ConfigError, load_config
     from src.common.plan import BuildPlan, StageError
+    from src.common.theme import ThemeError, select_themes
     from src.pipeline import run_build
 
     try:
         cfg = load_config()
-        plan = BuildPlan(
-            theme=theme or cfg.render.defaultTheme,
-            only=set(only or []),
-            views=[v.strip() for v in views.split(",")] if views else None,
-            force=force,
-            from_stage=from_stage,
-            only_stage=stage,
-        )
-        run_build(cfg, plan)
-    except (StageError, ConfigError) as exc:
+        themes = select_themes(theme, all_themes, default=cfg.render.defaultTheme)
+        for i, t in enumerate(themes, 1):
+            if all_themes:
+                C.rule(f"[bold cyan]theme {i}/{len(themes)}: {t}")
+            plan = BuildPlan(
+                theme=t,
+                only=set(only or []),
+                views=[v.strip() for v in views.split(",")] if views else None,
+                force=force,
+                from_stage=from_stage,
+                only_stage=stage,
+            )
+            run_build(cfg, plan)
+    except (StageError, ConfigError, ThemeError) as exc:
         C.err_console.print(f"[red]build failed:[/] {exc}")
         raise typer.Exit(1) from exc
 
 
 @app.command()
 def upload(
-    theme: str = typer.Argument(..., help="Theme name/path whose built zip to publish."),
-    version: str = typer.Argument(..., help="Version, e.g. 0.1.0 (release tag becomes v0.1.0)."),
+    version: str = typer.Option(..., "--version", help="Version, e.g. 0.1.0 (tag: v0.1.0)."),
+    theme: str = typer.Option(None, "--theme", help="Theme name/path whose built zip to publish."),
+    all_themes: bool = typer.Option(
+        False,
+        "--all-themes",
+        help="Upload every theme in themes/ to the same release (incompatible with --theme).",
+    ),
 ) -> None:
-    """Attach a built deliverable zip to a GitHub Release (tag ``v<version>``).
+    """Attach built deliverable zip(s) to a GitHub Release (tag ``v<version>``).
 
     Uploads ``dist/<theme>/<theme>.zip`` as ``<theme>-<version>.zip``. The first upload for a
     version creates the release pinned to HEAD's sha; later uploads (other themes, or re-runs) just
     attach to the same release page. Requires the ``gh`` CLI and that HEAD is already pushed.
     """
+    from src.common.theme import ThemeError, select_themes
     from src.publish.upload import UploadError
     from src.publish.upload import run as upload_run
 
     try:
-        upload_run(theme, version)
-    except UploadError as exc:
+        for t in select_themes(theme, all_themes):
+            upload_run(t, version)
+    except (UploadError, ThemeError) as exc:
         C.err_console.print(f"[red]upload failed:[/] {exc}")
         raise typer.Exit(1) from exc
 

@@ -29,4 +29,4 @@ theme:
   # omit them.
   showCollisionBoxTicks: true
   collisionBoxColor: "#fa9549"
-  collisionBoxAlpha: 180        # tick opacity, 0..255
+  collisionBoxAlpha: 0.70        # tick opacity (0..1)
