@@ -4,6 +4,10 @@
 
 ![Blender from the rear in Excalidraw Blue](./docs/blender_back.png)
 
+## Disclaimer
+
+This project is completely independent and is not endorsed by, sponsored by, or affiliated with the game Satisfactory or its developers, Coffee Stain Studios. All game titles, logos, and assets belong to their respective copyright and trademark owners.
+
 ## Getting started
 
 1. Go to the [Releases page](https://github.com/elliot-nelson/satisfactory-schematics/releases) and select the most recent release.
