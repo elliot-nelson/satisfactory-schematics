@@ -1,9 +1,10 @@
 """Finalize stage driver (host, pure Python -- no Blender).
 
 For the selected theme, turn each rendered view (raster alpha + Freestyle strokes + manifest) into a
-themed SVG under ``build/04-svg/<theme>/`` and, when ``--png`` is set, a rasterized PNG under
-``build/05-png/<theme>/``. Theme-dependent and incremental (skips a view whose SVG is newer than all
-its inputs unless ``force``). This is the pass that runs per theme; everything it reads is shared.
+themed SVG under ``build/04-svg/<theme>/`` plus a rasterized PNG under ``build/05-png/<theme>/`` (each
+PNG is the SVG rasterized at its native size, so the two can't drift; skipped only if
+``rsvg-convert`` is missing). Theme-dependent and incremental (skips a view whose SVG is newer than
+all its inputs unless ``force``). This is the per-theme pass; everything it reads is shared.
 """
 
 from __future__ import annotations
@@ -60,7 +61,7 @@ def _up_to_date(svg: Path, inputs: list[Path]) -> bool:
 
 
 def run(cfg: Config, plan: BuildPlan) -> None:
-    """Assemble per-theme SVGs (+ optional PNGs) from the rasters, strokes, and manifests."""
+    """Assemble per-theme SVGs + PNGs from the rasters, strokes, and manifests."""
     try:
         theme = load_theme(plan.theme)
     except ThemeError as exc:
@@ -68,15 +69,12 @@ def run(cfg: Config, plan: BuildPlan) -> None:
 
     style = theme.style(potrace=cfg.tools.potrace.bin or "potrace")
     rsvg_bin = cfg.tools.rsvg.bin or "rsvg-convert"
-    want_png = plan.png
-    png_ok = R.rsvg_available(rsvg_bin) if want_png else False
-    if want_png and not png_ok:
-        C.console.print(
-            f"[yellow]![/] {rsvg_bin} not found -> skipping --png (brew install librsvg)"
-        )
+    png_ok = R.rsvg_available(rsvg_bin)
+    if not png_ok:
+        C.console.print(f"[yellow]![/] {rsvg_bin} not found -> skipping PNG (brew install librsvg)")
 
     svg_out = ensure(SVG_DIR / theme.slug)
-    png_out = ensure(PNG_DIR / theme.slug) if (want_png and png_ok) else None
+    png_out = ensure(PNG_DIR / theme.slug) if png_ok else None
     views_filter = set(plan.views) if plan.views else None
 
     n_svg = n_png = 0

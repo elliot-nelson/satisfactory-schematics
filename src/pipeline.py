@@ -36,7 +36,7 @@ STAGES: list[Stage] = [
     Stage("render", "Blender rasters + strokes (theme-independent)", render_run.run),
     Stage(
         "finalize",
-        "assemble per-theme SVG (+ optional PNG)",
+        "assemble per-theme SVG + PNG",
         finalize_run.run,
         theme_dependent=True,
     ),

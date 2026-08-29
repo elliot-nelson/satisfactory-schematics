@@ -27,7 +27,7 @@ from src.common.theme import ThemeError, load_theme
 
 
 def _copy_glob(src_dir: Path, dst_dir: Path, pattern: str) -> int:
-    """Copy every ``pattern`` file from ``src_dir`` into ``dst_dir``; return how many were copied."""
+    """Copy every ``pattern`` file from ``src_dir`` into ``dst_dir``; return the count copied."""
     files = sorted(src_dir.glob(pattern)) if src_dir.is_dir() else []
     if not files:
         return 0
@@ -38,7 +38,7 @@ def _copy_glob(src_dir: Path, dst_dir: Path, pattern: str) -> int:
 
 
 def _zip_dir(dest: Path, zip_path: Path) -> None:
-    """Zip the staged ``dest`` tree into ``zip_path`` (arcnames relative to ``dest``, zip excluded)."""
+    """Zip the staged ``dest`` tree into ``zip_path`` (relative arcnames; excludes the zip)."""
     with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
         for path in sorted(dest.rglob("*")):
             if path == zip_path or not path.is_file():
