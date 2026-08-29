@@ -1,0 +1,23 @@
+# Theme: Blue Excalidraw (Clean)
+#
+# blue-excalidraw with every annotation layer OFF: no I/O port markers, no clearance ticks --
+# just the hand-drawn jittered line art + silhouette fill. For when you want the pure sketch.
+# `sat build --theme blue-excalidraw-clean` writes into build/04-svg/blue-excalidraw-clean/
+# (and dist/blue-excalidraw-clean/); the slug is this file's stem.
+theme:
+  name: Blue Excalidraw (Clean)
+
+  # Line art + silhouette fill (the architect-blueprint body).
+  lineColor: "#1a478c"          # feature-edge line color
+  fillColor: "#1a478c"          # flat semi-transparent silhouette fill
+  fillAlpha: 0.30               # silhouette fill opacity (0..1)
+  lineWidth: 1.5                # feature-edge stroke width in px
+  jitter: 0.25                  # per-vertex hand-drawn wobble in px (0 = crisp)
+
+  # Annotations off: no port markers, no clearance ticks.
+  highlightPorts: false
+  inputPortColor: "#c82828"
+  outputPortColor: "#28aa46"
+  showCollisionBoxTicks: false
+  collisionBoxColor: "#fa9549"
+  collisionBoxAlpha: 180        # tick opacity, 0..255
