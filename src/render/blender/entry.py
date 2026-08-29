@@ -10,9 +10,9 @@ For one building ``.glb`` this produces, theme-independently:
     pixel rect (``clearance_px``) and the projected I/O-port pixel rects (``ports_px``).
 
 To get those pixels right we first drop the mesh into the same blueprint-root frame that ports.json
-/ clearance.json use: apply the mesh offset, draw any attached connector mouth-plates, apply the
-per-building ``annot`` fixup, then canonicalize flow-through machines (OUTPUT=+Y / INPUT=-Y). Ported
-from the old standalone ``render.py``. Turning all this into the final SVG (traced fill + stitched
+/ clearance.json use: apply the mesh offset, apply the per-building ``annot`` fixup, then
+canonicalize flow-through machines (OUTPUT=+Y / INPUT=-Y). Ported from the old standalone
+``render.py``. Turning all this into the final SVG (traced fill + stitched
 strokes + overlays) is the separate pure-Python finalize phase; this stage stops at the
 theme-independent raster + strokes + manifest.
 
@@ -73,8 +73,6 @@ def parse_args(argv):
     p.add_argument("--clearance", default=None, help="clearance.json (in-game footprint boxes).")
     p.add_argument("--ports", default=None, help="ports.json (belt/pipe I/O).")
     p.add_argument("--mesh-offsets", default=None, help="mesh_offsets.json (blueprint placement).")
-    p.add_argument("--connectors", default=None, help="connectors.json (attached mouth plates).")
-    p.add_argument("--connectors-dir", default=None, help="Folder of connector .glb files.")
     p.add_argument("--no-canonical", action="store_true", help="Skip OUTPUT=+Y/INPUT=-Y rotation.")
     p.add_argument("--no-port-snap", action="store_true", help="Keep ports at the raw point.")
     # port-marker geometry (meters); see render.py --port-* for the rationale
@@ -82,7 +80,7 @@ def parse_args(argv):
     p.add_argument("--port-belt-size", type=float, default=2.0)
     p.add_argument("--port-pipe-size", type=float, default=1.2)
     p.add_argument("--port-drop", type=float, default=0.2)
-    # segment mode (belts/pipes/beams/junctions): geometry only, no ports/clearance/connectors
+    # segment mode (belts/pipes/beams/junctions): geometry only, no ports/clearance
     p.add_argument("--kind", default=None, help="Segment kind -> render as a tileable piece.")
     p.add_argument("--tile-length", type=float, default=0.0, help="Straight-run length (m).")
     p.add_argument("--corner-radius", type=float, default=0.0, help="90-deg corner radius (m).")
@@ -106,13 +104,6 @@ def clear_scene():
 def import_model(path):
     bpy.ops.import_scene.gltf(filepath=path)
     return [o for o in bpy.context.scene.objects if o.type == "MESH"]
-
-
-def import_extra(path):
-    """Import another .glb and return ONLY the objects it added (for shared connector meshes)."""
-    before = set(bpy.context.scene.objects)
-    bpy.ops.import_scene.gltf(filepath=path)
-    return [o for o in bpy.context.scene.objects if o.type == "MESH" and o not in before]
 
 
 # --------------------------------------------------------------------------------------------------
@@ -312,7 +303,7 @@ def load_clearance(path, name):
 
 
 # --------------------------------------------------------------------------------------------------
-# orientation: mesh offset -> connectors -> annot correction -> canonical yaw
+# orientation: mesh offset -> annot correction -> canonical yaw
 # --------------------------------------------------------------------------------------------------
 def apply_mesh_offset(mesh_objects, offset, inv):
     """Move the imported mesh into the blueprint-root frame (rotate about Z by -yaw, then translate
@@ -335,29 +326,10 @@ def apply_mesh_offset(mesh_objects, offset, inv):
     bpy.context.view_layer.update()
 
 
-def load_connectors(path, name):
-    return _load_map(path, name) or []
-
-
-def place_connectors(placements, connectors_dir, inv):
-    """Import each connector mouth mesh and move it into the blueprint-root frame (same math as the
-    body offset). Returns the imported objects so the caller can fold them into the model."""
-    added = []
-    for pl in placements:
-        glb = Path(connectors_dir) / f"{pl['mesh']}.glb"
-        if not glb.is_file():
-            print(f"  WARNING: connector mesh missing: {glb} (skipped)", file=sys.stderr)
-            continue
-        objs = import_extra(str(glb))
-        apply_mesh_offset(objs, pl, inv)
-        added.extend(objs)
-    return added
-
-
-def apply_annot_offset(annot, ports, conn_objs, body_center, inv):
-    """Rotate/shift the ANNOTATION layer (ports + connector meshes) about the body's vertical axis
-    to seat it on the body, for buildings whose extracted port frame is out of sync (Particle
-    Accelerator). Driven by the catalog's optional ``annot`` block."""
+def apply_annot_offset(annot, ports, body_center, inv):
+    """Rotate/shift the port markers about the body's vertical axis to seat them on the body, for
+    buildings whose extracted port frame is out of sync (Particle Accelerator). Driven by the
+    catalog's optional ``annot`` block."""
     if not annot:
         return
     rot_deg = float(annot.get("rot_deg", 0.0))
@@ -372,10 +344,6 @@ def apply_annot_offset(annot, ports, conn_objs, body_center, inv):
     for p in ports:
         p["pos"] = m @ p["pos"]
         p["face"] = (r3 @ p["face"]).normalized()
-    for o in conn_objs:
-        o.matrix_world = m @ o.matrix_world
-    if conn_objs:
-        bpy.context.view_layer.update()
 
 
 def canonical_yaw(ports):
@@ -428,9 +396,10 @@ def apply_canonical(yaw_deg, mesh_objects, ports, clearance):
 
 
 def snap_ports_to_surface(mesh_objects, ports, band=1.0, reach=3.0):
-    """Move each port outward along its facing to the model's actual outer edge (the stored point is
-    often recessed under an overhang). Scans mesh vertices within a narrow lateral band; then makes
-    same-facing ports coplanar to their innermost snapped edge so a side reads as one clean row."""
+    """Seat each port on the body's outer face along its facing. The stored point is often recessed
+    under an overhang (or sits slightly proud), so we snap to the outermost body vertex within reach
+    -- inward or outward. Scans mesh vertices in a narrow lateral band, then makes same-facing ports
+    coplanar to their innermost edge so a side reads as one clean row."""
     if not ports:
         return
     up = Vector((0.0, 0.0, 1.0))
@@ -438,7 +407,7 @@ def snap_ports_to_surface(mesh_objects, ports, band=1.0, reach=3.0):
     for port in ports:
         side = port["face"].cross(up)
         side = side.normalized() if side.length > 1e-6 else Vector((1.0, 0.0, 0.0))
-        infos.append({"side": side, "cur": port["pos"].dot(port["face"]), "best": None})
+        infos.append({"side": side, "cur": port["pos"].dot(port["face"]), "projs": []})
 
     for obj in mesh_objects:
         mw = obj.matrix_world
@@ -448,15 +417,15 @@ def snap_ports_to_surface(mesh_objects, ports, band=1.0, reach=3.0):
                 if abs((w - port["pos"]).dot(info["side"])) > band:
                     continue
                 proj = w.dot(port["face"])
-                if proj < info["cur"] - band or proj > info["cur"] + reach:
+                if proj < info["cur"] - reach or proj > info["cur"] + reach:
                     continue
-                if info["best"] is None or proj > info["best"]:
-                    info["best"] = proj
+                info["projs"].append(proj)
 
     for port, info in zip(ports, infos, strict=True):
-        info["snapped"] = info["best"] is not None and info["best"] > info["cur"]
+        info["snapped"] = bool(info["projs"])
         if info["snapped"]:
-            port["pos"] = port["pos"] + port["face"] * (info["best"] - info["cur"])
+            best = max(info["projs"])
+            port["pos"] = port["pos"] + port["face"] * (best - info["cur"])
 
     groups = {}
     for port, info in zip(ports, infos, strict=True):
@@ -693,26 +662,20 @@ def main():
         # placement, no ports, no clearance -- just shape the geometry and frame it.
         mesh_objects = shape_segment(mesh_objects, args)
     else:
-        # Place the body where the blueprint puts it, then capture the body-only centre (the axis
-        # the annot layer rotates about) BEFORE folding in the shared connector meshes.
+        # Place the body where the blueprint puts it, then capture the body centre -- that's the
+        # axis the annot correction rotates the port markers about.
         mesh_offset = _load_map(args.mesh_offsets, name)
         if mesh_offset:
             apply_mesh_offset(mesh_objects, mesh_offset, inv)
         bmn, bmx = world_bbox(mesh_objects)
         body_center = ((bmn[0] + bmx[0]) / 2.0, (bmn[1] + bmx[1]) / 2.0)
 
-        conn_objs = []
-        placements = load_connectors(args.connectors, name)
-        if placements and args.connectors_dir:
-            conn_objs = place_connectors(placements, args.connectors_dir, inv)
-            mesh_objects = mesh_objects + conn_objs
-
         ports = load_ports(args.ports, name, args.meters_per_unit)
         clearance_m = load_clearance(args.clearance, name)
 
         annot = mesh_offset.get("annot") if mesh_offset else None
         if annot:
-            apply_annot_offset(annot, ports, conn_objs, body_center, inv)
+            apply_annot_offset(annot, ports, body_center, inv)
 
         # Canonical orientation for flow-through machines: send OUTPUT -> +Y (front). This runs
         # even for annot buildings -- annot only *co-locates* the port layer onto the body;

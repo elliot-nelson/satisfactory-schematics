@@ -26,7 +26,6 @@ from src.common.segments import SegmentJob, segment_jobs
 ENTRY = Path(__file__).resolve().parent / "blender" / "entry.py"
 MODELS_DIR = EXTRACT_DIR / "models"
 SEGMENTS_DIR = EXTRACT_DIR / "models" / "segments"
-CONNECTORS_DIR = EXTRACT_DIR / "models" / "connectors"
 RASTER_DIR = RENDER_DIR / "raster"
 STROKES_DIR = RENDER_DIR / "strokes"
 MANIFEST_DIR = RENDER_DIR / "manifests"
@@ -155,12 +154,10 @@ def run(cfg: Config, plan: BuildPlan) -> None:
         C.rule(f"{name}  ({len(views)} views)")
         body_args = [
             *_common_args(cfg, glb, views),
-            "--connectors-dir", str(CONNECTORS_DIR),
             *_prepare_arg("--clearance", PREPARE_DIR / "clearance.json"),
             *_prepare_arg("--ports", PREPARE_DIR / "ports.json"),
             *_prepare_arg("--mesh-offsets", PREPARE_DIR / "mesh_offsets.json"),
-            *_prepare_arg("--connectors", PREPARE_DIR / "connectors.json"),
-        ]  # fmt: skip
+        ]
         _invoke(blender, name, body_args)
         rendered += 1
 

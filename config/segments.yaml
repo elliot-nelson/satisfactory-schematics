@@ -1,16 +1,9 @@
-# Tileable / architectural pieces and the shared connector meshes.
+# Tileable / architectural pieces (belt/pipe spline tiles, pipe junctions, steel beams).
 #
-# Extracted like buildings, but these have no clearance/ports of their own. Two sections:
-#
-#   segments:    belt/pipe spline tiles, pipe junctions, and steel beams. Rendered as tiled runs /
-#                bent corners / as-is. `kind` drives how they render later; extraction just needs
-#                the mesh + name (the map key).
-#   connectors:  the shared FactoryInputs "mouth" plates some buildings stick on each I/O port
-#                (right now just the particle accelerator). The name MUST match the mesh leaf so a
-#                blueprint component's mesh reference can find its .glb.
-#
-# These land in build/01-extract/models/segments/ and .../connectors/, so the main building loop
-# skips right over them.
+# Extracted like buildings, but these have no clearance/ports of their own. Rendered as tiled runs /
+# bent corners / as-is; `kind` drives how each renders later, and extraction just needs the mesh +
+# name (the map key). They land in build/01-extract/models/segments/, so the building loop skips
+# right over them.
 
 segments:
   belt_segment:
@@ -34,11 +27,3 @@ segments:
   beam_connector:
     mesh: FactoryGame/Content/FactoryGame/Buildable/Building/Pillars/Mesh/SM_ConnectionCube_01
     kind: connector-cube # rendered as-is
-
-connectors:
-  SM_Input_01:
-    mesh: FactoryGame/Content/FactoryGame/Buildable/Factory/FactoryInputs/Mesh/SM_Input_01
-  SM_Output_01:
-    mesh: FactoryGame/Content/FactoryGame/Buildable/Factory/FactoryInputs/Mesh/SM_Output_01
-  SM_Pipe_InPut_01:
-    mesh: FactoryGame/Content/FactoryGame/Buildable/Factory/FactoryInputs/Mesh/SM_Pipe_InPut_01

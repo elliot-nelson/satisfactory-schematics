@@ -14,14 +14,12 @@ from src.common.buildings import load_catalog
 from src.common.plan import BuildPlan, StageError
 
 from .clearance import build_clearance, read_docs
-from .connectors import build_connectors
 from .mesh_offsets import build_mesh_offsets
 from .ports import build_ports
 from .util import name_by_asset_leaf
 
 RAW_PORTS = EXTRACT_DIR / "ports.raw.json"
 DOCS = EXTRACT_DIR / "docs" / "en-US.json"
-CONNECTORS_DIR = EXTRACT_DIR / "models" / "connectors"
 
 
 def _write_json(path: Path, data: object) -> Path:
@@ -40,7 +38,7 @@ def _summary(kind: str, count: int, notes: list[str]) -> None:
 
 
 def run(cfg: Config, plan: BuildPlan) -> None:
-    """Turn the extract outputs into clearance/ports/mesh_offsets/connectors JSON.
+    """Turn the extract outputs into clearance/ports/mesh_offsets JSON.
 
     We take ``plan`` just to match the stage signature -- prepare is cheap and whole-catalog, so it
     ignores ``--only`` and always writes the complete set.
@@ -64,11 +62,6 @@ def run(cfg: Config, plan: BuildPlan) -> None:
     offsets, off_notes = build_mesh_offsets(raw, catalog)
     _write_json(PREPARE_DIR / "mesh_offsets.json", offsets)
     _summary("mesh_offsets", len(offsets), off_notes)
-
-    # connectors.json
-    connectors, con_notes = build_connectors(raw, catalog, CONNECTORS_DIR)
-    _write_json(PREPARE_DIR / "connectors.json", connectors)
-    _summary("connectors", len(connectors), con_notes)
 
     # clearance.json (needs the docs dump; graceful skip if extract hasn't copied it yet)
     if DOCS.is_file():

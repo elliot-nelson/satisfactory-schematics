@@ -5,7 +5,6 @@ Builds the Docker image (once), then runs it over the catalog to produce, under
 
     models/<name>.glb              building bodies (+ extracted.json)
     models/segments/<name>.glb     belt/pipe/beam/junction tiles
-    models/connectors/<name>.glb   shared belt/pipe mouth plates
     ports.raw.json                 raw connection + component transforms (--dump-ports)
     docs/en-US.json                copy of the game docs dump (clearance source for `prepare`)
 
@@ -44,7 +43,6 @@ class ExtractPlan:
 
     only: set[str] = field(default_factory=set)
     skip_segments: bool = False
-    skip_connectors: bool = False
     skip_ports: bool = False
     rebuild: bool = False
 
@@ -172,7 +170,7 @@ def run_extract(cfg: Config, plan: ExtractPlan) -> None:
     ensure(EXTRACT_DIR)
 
     buildings = _selected_buildings(catalog, plan.only)
-    targeted = bool(plan.only)  # a targeted run skips the unrelated segment/connector sets
+    targeted = bool(plan.only)  # a targeted run skips the unrelated segment set
 
     # 1) building bodies -> models/
     C.rule(f"Buildings ({len(buildings)})")
@@ -193,17 +191,7 @@ def run_extract(cfg: Config, plan: ExtractPlan) -> None:
             quiet_stdout=False,
         )
 
-    # 3) connectors -> models/connectors/
-    if catalog.connectors and not plan.skip_connectors and not targeted:
-        C.rule(f"Connectors ({len(catalog.connectors)})")
-        con_list = _write_list("connectors.txt", _mesh_lines(catalog.connectors))
-        _docker_run(
-            game_dir,
-            ["--out", "/out/models/connectors", "--list", f"/out/_lists/{con_list.name}"],
-            quiet_stdout=False,
-        )
-
-    # 4) I/O ports + component transforms -> ports.raw.json (stdout is the full JSON: suppress)
+    # 3) I/O ports + component transforms -> ports.raw.json (stdout is the full JSON: suppress)
     if not plan.skip_ports:
         C.rule(f"Ports dump ({len(buildings)})")
         bp_list = _write_list("blueprints.txt", [b.blueprint for b in buildings])

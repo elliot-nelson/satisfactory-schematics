@@ -59,13 +59,10 @@ def extract(
     only: list[str] = typer.Option(
         None,
         "--only",
-        help="Extract only these building name(s) (repeatable); skips segments/connectors.",
+        help="Extract only these building name(s) (repeatable); skips segments.",
     ),
     skip_segments: bool = typer.Option(
         False, "--skip-segments", help="Skip belt/pipe/beam/junction tiles."
-    ),
-    skip_connectors: bool = typer.Option(
-        False, "--skip-connectors", help="Skip shared mouth-plate meshes."
     ),
     skip_ports: bool = typer.Option(False, "--skip-ports", help="Skip the --dump-ports pass."),
     rebuild: bool = typer.Option(
@@ -91,7 +88,6 @@ def extract(
             ExtractPlan(
                 only=set(only or []),
                 skip_segments=skip_segments,
-                skip_connectors=skip_connectors,
                 skip_ports=skip_ports,
                 rebuild=rebuild,
             ),

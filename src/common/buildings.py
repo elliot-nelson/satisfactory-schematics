@@ -1,4 +1,4 @@
-"""Load the building/segment/connector catalog from ``config/buildings.yaml`` + ``segments.yaml``.
+"""Load the building/segment catalog from ``config/buildings.yaml`` + ``segments.yaml``.
 
 One list to rule them all -- every stage reads the catalog through here, so nothing can drift out of
 sync (this replaced a pile of parallel ``.txt`` files that always did).
@@ -33,16 +33,9 @@ class Segment:
 
 
 @dataclass(frozen=True)
-class Connector:
-    name: str
-    mesh: str
-
-
-@dataclass(frozen=True)
 class Catalog:
     buildings: list[Building]
     segments: list[Segment]
-    connectors: list[Connector]
 
 
 def _load_yaml_map(path: Path) -> dict[str, Any]:
@@ -77,13 +70,10 @@ def load_catalog(cfg: Config) -> Catalog:
         )
 
     segments: list[Segment] = []
-    connectors: list[Connector] = []
     seg_path = _resolve(cfg.segments)
     if seg_path.exists():
         seg_raw = _load_yaml_map(seg_path)
         for name, spec in (seg_raw.get("segments") or {}).items():
             segments.append(Segment(name=name, mesh=spec["mesh"], kind=spec.get("kind")))
-        for name, spec in (seg_raw.get("connectors") or {}).items():
-            connectors.append(Connector(name=name, mesh=spec["mesh"]))
 
-    return Catalog(buildings=buildings, segments=segments, connectors=connectors)
+    return Catalog(buildings=buildings, segments=segments)
