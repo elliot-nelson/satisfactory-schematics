@@ -1,14 +1,14 @@
 """The ``sat`` CLI entrypoint.
 
-Implemented so far: ``doctor``, ``extract`` (plus the dev helpers ``check`` / ``fix``). The
-remaining pipeline stage commands are stubs that will be filled in during later phases.
+Two pipeline commands: ``extract`` (the only game-reliant step) and ``build`` (everything after
+it). ``build`` currently runs the Blender raster stage; later stages fill in behind it. Plus the
+dev helpers ``check`` / ``fix``.
 """
 
 from __future__ import annotations
 
 import subprocess
 import sys
-from collections.abc import Callable
 
 import typer
 
@@ -101,29 +101,35 @@ def extract(
         raise typer.Exit(1) from exc
 
 
-_STAGES = ["prepare", "render", "finalize", "preview", "bundle", "build"]
+@app.command()
+def build(
+    theme: str = typer.Option(None, "--theme", help="Theme to build (default: config default)."),
+    only: list[str] = typer.Option(None, "--only", help="Build only these building(s)."),
+    views: str = typer.Option(None, "--views", help="Comma-separated view override."),
+    force: bool = typer.Option(False, "--force", help="Re-render even if rasters exist."),
+) -> None:
+    """Turn extracted models into schematics (everything after extract).
 
+    Currently runs the Blender raster stage; the remaining stages (prepare -> annotate ->
+    finalize -> preview -> bundle) are filled in during later phases.
+    """
+    from src.cli.config import ConfigError, load_config
+    from src.render.run import RenderError, RenderPlan, run_render
 
-def _stub(name: str) -> None:
-    C.err_console.print(
-        f"[yellow]'{name}' is not implemented yet[/] (planned in NEW_REPO_PLAN.md). "
-        "Current focus: Phase 0 + doctor."
-    )
-    raise typer.Exit(2)
-
-
-def _make_stub(name: str) -> Callable[[], None]:
-    def cmd() -> None:
-        _stub(name)
-
-    cmd.__name__ = name
-    return cmd
-
-
-for _stage in _STAGES:
-    app.command(name=_stage, help=f"[stub] {_stage} stage (not implemented yet).")(
-        _make_stub(_stage)
-    )
+    try:
+        cfg = load_config()
+        _ = theme or cfg.render.defaultTheme  # threaded through once themed stages exist
+        run_render(
+            cfg,
+            RenderPlan(
+                only=set(only or []),
+                views=[v.strip() for v in views.split(",")] if views else None,
+                force=force,
+            ),
+        )
+    except (RenderError, ConfigError) as exc:
+        C.err_console.print(f"[red]build failed:[/] {exc}")
+        raise typer.Exit(1) from exc
 
 
 def main() -> None:

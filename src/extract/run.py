@@ -7,13 +7,16 @@ Builds the Docker image (once), then runs it over the catalog to produce, under
     models/segments/<name>.glb     belt/pipe/beam/junction tiles
     models/connectors/<name>.glb   shared belt/pipe mouth plates
     ports.raw.json                 raw connection + component transforms (--dump-ports)
+    docs/en-US.json                copy of the game docs dump (clearance source for `prepare`)
 
-The single game-touching stage: the install is mounted read-only; everything else downstream
-consumes these plain files.
+The single game-touching stage: the install is mounted read-only, and the one game file the rest
+of the pipeline needs (the docs dump) is copied out here -- so everything downstream reads only
+build/01-extract/, never the install.
 """
 
 from __future__ import annotations
 
+import shutil
 import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -210,4 +213,20 @@ def run_extract(cfg: Config, plan: ExtractPlan) -> None:
             quiet_stdout=True,
         )
 
+    # 5) copy the game's docs dump so `prepare` (clearance) can run fully offline. This is the
+    #    boundary: extract is the ONLY stage that reads the install -- everything downstream reads
+    #    build/01-extract/.
+    _copy_game_docs(game_dir)
+
     C.console.print(f"\n[green]Extraction complete[/] -> {EXTRACT_DIR}")
+
+
+def _copy_game_docs(game_dir: Path) -> None:
+    """Copy CommunityResources/Docs/en-US.json into build/01-extract/docs/ (clearance source)."""
+    src = game_dir / "CommunityResources" / "Docs" / "en-US.json"
+    if not src.is_file():
+        C.err_console.print(f"[yellow]warning:[/] game docs not found at {src}")
+        return
+    dst = ensure(EXTRACT_DIR / "docs") / "en-US.json"
+    shutil.copy2(src, dst)
+    C.console.print(f"[dim]docs -> {dst.relative_to(REPO_ROOT)}[/]")
