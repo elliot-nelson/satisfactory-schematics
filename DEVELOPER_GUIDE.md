@@ -36,7 +36,7 @@ something needs a human.
 `doctor` is a Python program that runs through `uv`, so a handful of things have to exist before it
 can even start. Do these once, in order:
 
-> ![NOTE]
+> [!NOTE]
 >
 > On Windows or Linux? Skip steps 1-2 and follow OS instructions for installing `uv`.
 
