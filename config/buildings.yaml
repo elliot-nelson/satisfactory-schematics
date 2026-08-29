@@ -54,7 +54,7 @@ particle_accelerator:
   mesh: FactoryGame/Content/FactoryGame/Buildable/Factory/HadronCollider/Mesh/SM_HadronCollider_01
   blueprint: FactoryGame/Content/FactoryGame/Buildable/Factory/HadronCollider/Build_HadronCollider
   category: production
-  annot: { rot_deg: 180, shift: [4.5, 0, 0] } # its port layer needs a nudge to line up
+  annot: { rot_deg: 180, shift: [9.5, 0, 0] } # port frame comes in flipped + offset; rigidly reseat it
 
 packager:
   mesh: FactoryGame/Content/FactoryGame/Buildable/Factory/Packager/Mesh/SM_Packager_01
