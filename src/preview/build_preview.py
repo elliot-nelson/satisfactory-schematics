@@ -6,10 +6,10 @@ pixel/meter dimensions from the render manifests, groups builds into sections us
 ``category`` from ``config/buildings.yaml`` (retiring the old hand-kept ``categories.json`` --
 anything rendered but not in the catalog lands in a trailing "Other" section), and writes:
 
-  * ``preview.html`` -- a single self-contained page (inline CSS + **inlined SVGs**, no external
-    deps or build step): a sticky sidebar of jump links + a dark gallery with each drawing on an
-    eggshell card, plus a click-to-zoom lightbox. Being self-contained, it renders identically from
-    ``build/`` now and from ``dist/`` after the bundle stage copies it.
+  * ``preview.html`` -- a single page (inline CSS, no build step): a sticky sidebar of jump links, a
+    dark gallery with each drawing on an eggshell card, plus a click-to-zoom lightbox. It points at
+    the SVGs by relative ``svg/<name>`` path, so it just works once it's next to the ``svg/`` folder
+    (which the bundle stage always ships it beside).
   * ``preview.json`` -- theme look + categories + per-build manifest & (relative) asset paths, so a
     future user-facing app can render its own viewer without re-deriving any of this.
 
@@ -18,7 +18,6 @@ Ported from the old ``tools/build_preview.py``; the HTML/CSS live in ``templates
 
 from __future__ import annotations
 
-import base64
 import datetime
 import json
 import re
@@ -31,6 +30,7 @@ from src.cli.config import Config
 from src.cli.context import PNG_DIR, PREVIEW_DIR, RENDER_DIR, SVG_DIR, ensure
 from src.common.buildings import Catalog, load_catalog
 from src.common.plan import BuildPlan, StageError
+from src.common.segments import segment_jobs
 from src.common.theme import Theme, ThemeError, load_theme
 
 MANIFEST_DIR = RENDER_DIR / "manifests"
@@ -138,11 +138,19 @@ def collect_builds(
 
 
 def build_sections(
-    builds: OrderedDict[str, dict[str, Any]], catalog: Catalog
+    builds: OrderedDict[str, dict[str, Any]], catalog: Catalog, cfg: Config
 ) -> list[tuple[dict[str, str], list[str]]]:
-    """Order builds into ``[(category, [stem,...]), ...]`` by each building's catalog category."""
+    """Order builds into ``[(category, [stem,...]), ...]`` by catalog category.
+
+    Buildings carry their category directly; segment pieces (belts/pipes/beams/junctions) get theirs
+    from the same expansion the renderer uses, so belts/pipes land under Logistics and beams under
+    Architecture.
+    """
     cat_of = {b.name: b.category for b in catalog.buildings}
     order = [b.name for b in catalog.buildings]
+    for job in segment_jobs(catalog, cfg.render.segmentLengths):
+        cat_of[job.name] = job.category
+        order.append(job.name)
 
     by_cat: dict[str, list[str]] = defaultdict(list)
     for stem in builds:
@@ -235,17 +243,10 @@ def write_json(
 # ---- preview.html ---------------------------------------------------------
 
 
-def _data_uri(svg_path: Path) -> str:
-    """Inline an SVG file as a base64 ``data:`` URI so preview.html is fully self-contained."""
-    b64 = base64.b64encode(svg_path.read_bytes()).decode("ascii")
-    return f"data:image/svg+xml;base64,{b64}"
-
-
 def _render_html(
     theme: Theme,
     sections: list[tuple[dict[str, str], list[str]]],
     builds: OrderedDict[str, dict[str, Any]],
-    svg_dir: Path,
 ) -> str:
     side = []
     for c, stems in sections:
@@ -266,7 +267,7 @@ def _render_html(
             cards = []
             for v in b["views"]:
                 dims = f"{v['width_px']}\u00d7{v['height_px']} px" if v["width_px"] else ""
-                src = _data_uri(svg_dir / v["svg"])
+                src = "svg/" + v["svg"]  # relative -- preview.html always ships beside svg/
                 cards.append(
                     f'<figure class="card"><div class="stage">'
                     f'<img loading="lazy" src="{src}" alt="{_esc(v["svg"])}" '
@@ -325,13 +326,11 @@ def run(cfg: Config, plan: BuildPlan) -> None:
 
     catalog = load_catalog(cfg)
     builds = collect_builds(svg_dir, PNG_DIR / theme.slug, plan.only)
-    sections = build_sections(builds, catalog)
+    sections = build_sections(builds, catalog, cfg)
 
     out_dir = ensure(PREVIEW_DIR / theme.slug)
     counts = write_json(out_dir / "preview.json", theme, sections, builds)
-    (out_dir / "preview.html").write_text(
-        _render_html(theme, sections, builds, svg_dir), encoding="utf-8"
-    )
+    (out_dir / "preview.html").write_text(_render_html(theme, sections, builds), encoding="utf-8")
 
     C.console.print(
         f"\n[green]Preview complete[/] -> {out_dir / 'preview.html'}  "

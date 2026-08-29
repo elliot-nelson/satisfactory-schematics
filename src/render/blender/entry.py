@@ -82,6 +82,13 @@ def parse_args(argv):
     p.add_argument("--port-belt-size", type=float, default=2.0)
     p.add_argument("--port-pipe-size", type=float, default=1.2)
     p.add_argument("--port-drop", type=float, default=0.2)
+    # segment mode (belts/pipes/beams/junctions): geometry only, no ports/clearance/connectors
+    p.add_argument("--kind", default=None, help="Segment kind -> render as a tileable piece.")
+    p.add_argument("--tile-length", type=float, default=0.0, help="Straight-run length (m).")
+    p.add_argument("--corner-radius", type=float, default=0.0, help="90-deg corner radius (m).")
+    p.add_argument(
+        "--tile-axis", default="x", help="Run axis for tiling (x for belts, z for beams)."
+    )
     return p.parse_args(argv)
 
 
@@ -159,6 +166,107 @@ def robust_world_bbox(mesh_objects, gap_bu, max_trim_frac=0.02):
         cols[i].sort()
         mins[i], maxs[i] = _robust_extent(cols[i], gap_bu, max_trim)
     return mins, maxs
+
+
+# --------------------------------------------------------------------------------------------------
+# segment shaping (belts / pipes / beams)
+# --------------------------------------------------------------------------------------------------
+def tile_run(mesh_objects, target_len_bu, axis="x"):
+    """Turn one belt/pipe/beam tile into a straight run of ``target_len_bu`` along ``axis``.
+
+    In game these are spline meshes -- a short cross-section tile repeated along the path. The .glb
+    we extract is that single tile. To draw a 1/2/4/8 m piece we tile the tile: join everything into
+    one object, bake its transform (so local == world, glTF Y-up->Z-up folded into the verts),
+    duplicate it end-to-end with an Array modifier to the nearest whole tile count, then scale the
+    run axis so the total is exactly ``target_len_bu``. The tiny scale nudge is invisible on a
+    uniform run.
+    """
+    ai = AXIS_INDEX[axis]
+    for o in bpy.context.scene.objects:
+        o.select_set(False)
+    for o in mesh_objects:
+        o.select_set(True)
+    bpy.context.view_layer.objects.active = mesh_objects[0]
+    if len(mesh_objects) > 1:
+        bpy.ops.object.join()
+    obj = bpy.context.view_layer.objects.active
+    bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+
+    mn, mx = world_bbox([obj])
+    seg = mx[ai] - mn[ai]
+    if seg < 1e-6:
+        return [obj]
+
+    count = max(1, math.floor(target_len_bu / seg + 0.5))
+    if count > 1:
+        mod = obj.modifiers.new("tile", "ARRAY")
+        mod.use_relative_offset = False
+        mod.use_constant_offset = True
+        mod.constant_offset_displace = tuple(seg if i == ai else 0.0 for i in range(3))
+        mod.count = count
+        bpy.ops.object.modifier_apply(modifier=mod.name)
+
+    total = count * seg
+    if total > 1e-6:
+        obj.scale[ai] = obj.scale[ai] * (target_len_bu / total)
+    bpy.context.view_layer.update()  # matrix_world reflects the scale only after a depsgraph update
+    return [obj]
+
+
+def bend_run(mesh_objects, radius_bu, axis="x"):
+    """Bend a belt/pipe tile into a flat 90-degree corner of centerline ``radius_bu``.
+
+    There's no dedicated corner mesh in game, so we synthesise one: build a straight run whose
+    length equals the quarter-arc (``radius * pi/2``), densely subdivide it (the raw tile only has
+    end rings, so a bend needs verts to curve), then map local X onto a quarter circle by hand. The
+    result enters from -Y and exits +X, filling a ``2*radius`` square that tiles flush with the
+    straight runs -- rotate/mirror in your drawing tool for the other three orientations.
+    """
+    if axis != "x":
+        raise SystemExit("bend_run only supports --tile-axis x")
+    arc_len = radius_bu * (math.pi / 2.0)
+    obj = tile_run(mesh_objects, arc_len, "x")[0]
+    bpy.ops.object.select_all(action="DESELECT")
+    obj.select_set(True)
+    bpy.context.view_layer.objects.active = obj
+    bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+
+    cuts = max(8, min(64, int(arc_len / 0.1)))
+    bpy.ops.object.mode_set(mode="EDIT")
+    bpy.ops.mesh.select_all(action="SELECT")
+    bpy.ops.mesh.subdivide(number_cuts=cuts)
+    bpy.ops.object.mode_set(mode="OBJECT")
+
+    # Map the straight run's local X (0..L) onto a quarter circle of radius R centered at (R,0), and
+    # the lateral offset (local Y) onto the radial direction. Centerline runs (0,0) heading +Y to
+    # (R,R) heading +X; belt height / pipe vertical (Z) is untouched.
+    me = obj.data
+    xs = [v.co.x for v in me.vertices]
+    ys = [v.co.y for v in me.vertices]
+    xmin, xmax = min(xs), max(xs)
+    ycen = (min(ys) + max(ys)) / 2.0
+    span = xmax - xmin
+    rad0 = radius_bu
+    if span > 1e-9:
+        for v in me.vertices:
+            s = (v.co.x - xmin) / span  # 0..1 along the run
+            phi = math.pi - s * (math.pi / 2.0)  # pi (entry) -> pi/2 (exit)
+            rad = rad0 + (v.co.y - ycen)  # lateral offset -> radial
+            v.co.x = rad0 + rad * math.cos(phi)
+            v.co.y = rad * math.sin(phi)
+    me.update()
+    bpy.context.view_layer.update()
+    return [obj]
+
+
+def shape_segment(mesh_objects, args):
+    """Apply the right tiling/bend for a segment job (or render as-is for junctions/connector)."""
+    inv = 1.0 / args.meters_per_unit
+    if args.corner_radius and args.corner_radius > 0:
+        return bend_run(mesh_objects, args.corner_radius * inv, args.tile_axis)
+    if args.tile_length and args.tile_length > 0:
+        return tile_run(mesh_objects, args.tile_length * inv, args.tile_axis)
+    return mesh_objects
 
 
 # --------------------------------------------------------------------------------------------------
@@ -466,61 +574,7 @@ def project_ports(scene, cam_obj, ports, view_name, res_x, res_y, args):
     return out
 
 
-def _power_occluded(scene, depsgraph, point, view_dir, eps=0.5, far=1000.0):
-    """True if solid geometry sits between the camera side and the power nub (nub hidden behind the
-    body for this view). ``view_dir`` is the unit offset from the model toward the camera; we cast a
-    ray from far on the camera side back toward the model and compare the first hit's depth to the
-    nub's: a hit clearly in front (> ``eps`` bu nearer the camera) means the nub is buried. A power
-    nub sits proud of the surface, so from a side that sees it the first hit lands ~on it."""
-    origin = point + view_dir * far
-    hit = scene.ray_cast(depsgraph, origin, -view_dir)
-    if not hit[0]:
-        return False
-    return (hit[1] - point).dot(view_dir) > eps
-
-
-def project_power_ports(scene, cam_obj, power_ports, view_name, res_x, res_y, args):
-    """Project each power connector as a positional point marker (a small square around its
-    projected 3D point), occlusion-culled by ray-cast so it shows only on views that see the nub."""
-    if not power_ports:
-        return []
-    view = VIEWS[view_name]
-    view_dir = Vector(view["offset"]).normalized()
-    haxis = Vector((0.0, 0.0, 0.0))
-    vaxis = Vector((0.0, 0.0, 0.0))
-    haxis[AXIS_INDEX[view["h"]]] = 1.0
-    vaxis[AXIS_INDEX[view["v"]]] = 1.0
-    half = 0.5 * args.port_size / args.meters_per_unit
-    depsgraph = bpy.context.evaluated_depsgraph_get()
-    out = []
-    for port in power_ports:
-        p = port["pos"]
-        if _power_occluded(scene, depsgraph, p, view_dir):
-            continue
-        xs, ys = [], []
-        for su in (-1.0, 1.0):
-            for sv in (-1.0, 1.0):
-                w = p + haxis * (half * su) + vaxis * (half * sv)
-                ndc = world_to_camera_view(scene, cam_obj, w)
-                xs.append(ndc.x * res_x)
-                ys.append((1.0 - ndc.y) * res_y)
-        out.append(
-            {
-                "role": "power",
-                "kind": "power",
-                "rect": [
-                    round(min(xs), 1),
-                    round(min(ys), 1),
-                    round(max(xs), 1),
-                    round(max(ys), 1),
-                ],
-                "face_on": True,
-            }
-        )
-    return out
-
-
-def render_view(cam_obj, mins, maxs, view_name, args, out_base, clearance_bu, ports, power_ports):
+def render_view(cam_obj, mins, maxs, view_name, args, out_base, clearance_bu, ports):
     """Render one view; return its manifest dict. Framing is grid-snapped from the mesh origin and
     expanded to also contain the clearance box; clearance corners + ports project to pixels."""
     view = VIEWS[view_name]
@@ -597,9 +651,6 @@ def render_view(cam_obj, mins, maxs, view_name, args, out_base, clearance_bu, po
         clearance_px = [round(min(xs)), round(min(ys)), round(max(xs)), round(max(ys))]
 
     ports_px = project_ports(scene, cam_obj, ports or [], view_name, res_x, res_y, args)
-    ports_px += project_power_ports(
-        scene, cam_obj, power_ports or [], view_name, res_x, res_y, args
-    )
     gbu = (args.grid / mpu) if (args.grid and args.grid > 0) else 0
     print(f"[raster] {out_path.name}  {res_x}x{res_y} px  ({width_m:.2f} x {height_m:.2f} m)")
     return {
@@ -635,35 +686,42 @@ def main():
     if not mesh_objects:
         raise SystemExit(f"[render] no mesh objects imported from {args.input}")
 
-    # Place the body where the blueprint puts it, then capture the body-only centre (the axis the
-    # annot layer rotates about) BEFORE folding in the shared connector meshes.
-    mesh_offset = _load_map(args.mesh_offsets, name)
-    if mesh_offset:
-        apply_mesh_offset(mesh_objects, mesh_offset, inv)
-    bmn, bmx = world_bbox(mesh_objects)
-    body_center = ((bmn[0] + bmx[0]) / 2.0, (bmn[1] + bmx[1]) / 2.0)
+    ports: list = []
+    clearance_m = None
+    if args.kind:
+        # Segment mode: a belt/pipe/beam tile (or a junction rendered as-is). No blueprint
+        # placement, no ports, no clearance -- just shape the geometry and frame it.
+        mesh_objects = shape_segment(mesh_objects, args)
+    else:
+        # Place the body where the blueprint puts it, then capture the body-only centre (the axis
+        # the annot layer rotates about) BEFORE folding in the shared connector meshes.
+        mesh_offset = _load_map(args.mesh_offsets, name)
+        if mesh_offset:
+            apply_mesh_offset(mesh_objects, mesh_offset, inv)
+        bmn, bmx = world_bbox(mesh_objects)
+        body_center = ((bmn[0] + bmx[0]) / 2.0, (bmn[1] + bmx[1]) / 2.0)
 
-    conn_objs = []
-    placements = load_connectors(args.connectors, name)
-    if placements and args.connectors_dir:
-        conn_objs = place_connectors(placements, args.connectors_dir, inv)
-        mesh_objects = mesh_objects + conn_objs
+        conn_objs = []
+        placements = load_connectors(args.connectors, name)
+        if placements and args.connectors_dir:
+            conn_objs = place_connectors(placements, args.connectors_dir, inv)
+            mesh_objects = mesh_objects + conn_objs
 
-    ports = load_ports(args.ports, name, args.meters_per_unit)
-    clearance_m = load_clearance(args.clearance, name)
+        ports = load_ports(args.ports, name, args.meters_per_unit)
+        clearance_m = load_clearance(args.clearance, name)
 
-    annot = mesh_offset.get("annot") if mesh_offset else None
-    if annot:
-        apply_annot_offset(annot, ports, conn_objs, body_center, inv)
+        annot = mesh_offset.get("annot") if mesh_offset else None
+        if annot:
+            apply_annot_offset(annot, ports, conn_objs, body_center, inv)
 
-    # Canonical orientation for flow-through machines: send OUTPUT -> +Y (front). This runs even for
-    # annot buildings -- annot only *co-locates* the port layer onto the body; canonicalizing then
-    # rotates the whole assembly (body + ports + clearance, rigidly, keeping co-location) so the
-    # accelerator ends up front=outputs like every other machine.
-    if ports and not args.no_canonical:
-        cyaw = canonical_yaw(ports)
-        if cyaw:
-            clearance_m = apply_canonical(cyaw, mesh_objects, ports, clearance_m)
+        # Canonical orientation for flow-through machines: send OUTPUT -> +Y (front). This runs
+        # even for annot buildings -- annot only *co-locates* the port layer onto the body;
+        # canonicalizing then rotates the whole assembly (body + ports + clearance, rigidly,
+        # keeping co-location) so the accelerator ends up front=outputs like every other machine.
+        if ports and not args.no_canonical:
+            cyaw = canonical_yaw(ports)
+            if cyaw:
+                clearance_m = apply_canonical(cyaw, mesh_objects, ports, clearance_m)
 
     mins, maxs = robust_world_bbox(mesh_objects, args.bbox_gap / args.meters_per_unit)
     dims_bu = maxs - mins
@@ -682,13 +740,8 @@ def main():
                 "max": Vector(tuple(math.ceil(mx[i] / gbu - eps) * gbu for i in range(3))),
             }
 
-    # Power nubs ride the same body transforms above (annot / canonical) but are NOT belt/pipe
-    # mouths: they get no edge-snap and no facing cull -- they're positional points.
-    io_ports = [p for p in ports if p.get("kind") != "power"]
-    power_ports = [p for p in ports if p.get("kind") == "power"]
-
-    if io_ports and not args.no_port_snap:
-        snap_ports_to_surface(mesh_objects, io_ports)
+    if ports and not args.no_port_snap:
+        snap_ports_to_surface(mesh_objects, ports)
 
     strokes_module = str(Path(__file__).resolve().parent / "freestyle.py")
     setup_engine(mesh_objects, args.crease_deg, strokes_module)
@@ -699,11 +752,7 @@ def main():
         if view not in VIEWS:
             print(f"[render] WARNING: unknown view '{view}' (skipped)", file=sys.stderr)
             continue
-        results.append(
-            render_view(
-                cam, mins, maxs, view, args, args.outdir, clearance_bu, io_ports, power_ports
-            )
-        )
+        results.append(render_view(cam, mins, maxs, view, args, args.outdir, clearance_bu, ports))
 
     manifest = {
         "name": name,

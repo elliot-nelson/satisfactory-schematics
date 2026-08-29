@@ -48,6 +48,8 @@ render:
   grid: 1.0 # meters
   metersPerUnit: 1.0 # glTF is already in meters
   views: ["top", "front", "back", "left", "right"]
+  segmentViews: ["top", "front"] # belts/pipes/beams read fine from just plan + side profile
+  segmentLengths: [1, 2, 4, 8] # straight-run lengths (m) we tile belts/pipes/beams to
   defaultTheme: "blue-schematic"
 
 buildings: "config/buildings.yaml" # the list of buildings we render

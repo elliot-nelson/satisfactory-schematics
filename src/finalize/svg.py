@@ -169,8 +169,6 @@ def assemble(strokes_path: Path, alpha: np.ndarray | None, man: dict[str, Any],
     if style.get("show_ticks", True) and man.get("clearance_px"):
         body.append(clearance_ticks_svg(man["clearance_px"], w, h, style["tick_rgba"]))
     if style.get("highlight_ports", True) and man.get("ports_px"):
-        body.append(
-            ports_svg(man["ports_px"], w, h, style["in_rgb"], style["out_rgb"], style["power_rgb"])
-        )
+        body.append(ports_svg(man["ports_px"], w, h, style["in_rgb"], style["out_rgb"]))
     body.append("</svg>")
     return "\n".join(body), len(loops)

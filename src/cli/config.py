@@ -83,6 +83,8 @@ class RenderConfig(_Model):
     grid: float = 1.0
     metersPerUnit: float = 1.0
     views: list[str] = ["top", "front", "back", "left", "right"]
+    segmentViews: list[str] = ["top", "front"]
+    segmentLengths: list[int] = [1, 2, 4, 8]
     defaultTheme: str = "blue-schematic"
 
 
