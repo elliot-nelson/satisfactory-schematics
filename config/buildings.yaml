@@ -13,7 +13,7 @@
 # Notes:
 #   - We use the "_static" visual meshes where they're the current in-game geometry; some
 #     buildings' SM_* meshes are the right body instead (e.g. splitter/merger squares, SPEC 12.7).
-#   - Confirm paths for a new game version with:  ./sat extract --find <substr>
+#   - Confirm paths for a new game version with:  ./schematic extract --find <substr>
 
 constructor:
   mesh: FactoryGame/Content/FactoryGame/Buildable/Factory/ConstructorMk1/Mesh/ConstructorMk1_static

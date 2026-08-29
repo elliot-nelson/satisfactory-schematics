@@ -2,7 +2,7 @@
 #
 # blue-excalidraw with every annotation layer OFF: no I/O port markers, no clearance ticks --
 # just the hand-drawn jittered line art + silhouette fill. For when you want the pure sketch.
-# `sat build --theme blue-excalidraw-clean` writes into build/04-svg/blue-excalidraw-clean/
+# `schematic build --theme blue-excalidraw-clean` writes into build/04-svg/blue-excalidraw-clean/
 # (and dist/blue-excalidraw-clean/); the slug is this file's stem.
 theme:
   name: Blue Excalidraw (Clean)

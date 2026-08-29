@@ -2,7 +2,7 @@
 #
 # The hand-drawn look: architect-blue line art with a touch of per-vertex jitter so edges
 # read like they were sketched by hand (a la Excalidraw). Ports + clearance ticks are on.
-# `sat build --theme blue-excalidraw` reads this file and writes results into
+# `schematic build --theme blue-excalidraw` reads this file and writes results into
 # build/04-svg/blue-excalidraw/ (and dist/blue-excalidraw/); the slug is this file's stem.
 # The theme-independent intermediates (rasters, strokes, manifests under build/03-render) are
 # shared, so switching themes only repeats the cheap finalize pass.

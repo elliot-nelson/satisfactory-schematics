@@ -2,7 +2,7 @@
 #
 # blue-schematic with every annotation layer OFF: no I/O port markers, no clearance ticks --
 # just the crisp thin line art + silhouette fill. For when you want the pure drawing.
-# `sat build --theme blue-schematic-clean` writes into build/04-svg/blue-schematic-clean/
+# `schematic build --theme blue-schematic-clean` writes into build/04-svg/blue-schematic-clean/
 # (and dist/blue-schematic-clean/); the slug is this file's stem.
 theme:
   name: Blue Schematic (Clean)

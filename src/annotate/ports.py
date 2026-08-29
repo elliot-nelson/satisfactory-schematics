@@ -110,7 +110,7 @@ def ports_svg(ports_px: list[dict[str, Any]], w_img: int, h_img: int, in_rgb: Rg
 
         # Pipes reuse the belt marker SHAPE. Face-on: a flat-filled circle (looking straight down
         # the tube, there is no rounded highlight to fake). Edge-on (seen from the top): a bar that
-        # bulges thicker into a flat-filled ellipse so it still reads as a round tube in cross-section.
+        # bulges thicker into a flat-filled ellipse so it still reads as a round tube side-on.
         if p.get("kind") == "pipe":
             if p.get("face_on"):
                 rad = max(3.0, min(w, h) / 2)
@@ -126,7 +126,7 @@ def ports_svg(ports_px: list[dict[str, Any]], w_img: int, h_img: int, in_rgb: Rg
                 fill = f'fill="{stroke}" fill-opacity="0.216"'
                 out.append(
                     f'<ellipse cx="{cx:.1f}" cy="{cy:.1f}" rx="{rx:.1f}" ry="{ry:.1f}" '
-                    f'{thin} {fill}/>'
+                    f"{thin} {fill}/>"
                 )
         elif p.get("face_on"):
             fill = f'fill="{stroke}" fill-opacity="0.216"'

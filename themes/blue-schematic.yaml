@@ -2,7 +2,7 @@
 #
 # The crisp technical-drawing look: architect-blue line art with thinner strokes and NO
 # jitter, so every edge is clean and straight like an engineering schematic. Ports +
-# clearance ticks are on. `sat build --theme blue-schematic` reads this file and writes into
+# clearance ticks are on. `schematic build --theme blue-schematic` reads this file and writes into
 # build/04-svg/blue-schematic/ (and dist/blue-schematic/); the slug is this file's stem.
 # The theme-independent intermediates (rasters, strokes, manifests under build/03-render) are
 # shared, so switching themes only repeats the cheap finalize pass.

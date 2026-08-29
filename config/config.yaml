@@ -1,6 +1,6 @@
 # Root configuration for the satisfactory-schematics pipeline.
 #
-# `sat doctor` and every pipeline stage read (and validate) this file. The game/engine
+# `schematic doctor` and every pipeline stage read (and validate) this file. The game/engine
 # versions below are what the extractor is proven against -- doctor HARD-GATES the installed
 # game against `game.version` / `game.engineVersion` because CUE4Parse's settings are matched
 # to exactly this build (a wrong version silently misreads mesh bytes; see SPEC.md 12.1).

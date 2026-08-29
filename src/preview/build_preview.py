@@ -319,7 +319,9 @@ def run(cfg: Config, plan: BuildPlan) -> None:
 
     svg_dir = SVG_DIR / theme.slug
     if not svg_dir.is_dir() or not any(svg_dir.glob("*.svg")):
-        raise StageError(f"no finalized SVGs at {svg_dir}. Run `./schematic build` (finalize) first.")
+        raise StageError(
+            f"no finalized SVGs at {svg_dir}. Run `./schematic build` (finalize) first."
+        )
 
     catalog = load_catalog(cfg)
     builds = collect_builds(svg_dir, PNG_DIR / theme.slug, plan.only)

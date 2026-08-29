@@ -137,7 +137,7 @@ def _game_dir(cfg: Config) -> Path:
     game_dir, source = resolve_game_dir(cfg)
     if game_dir is None or not game_dir.is_dir():
         raise ExtractError(
-            "No valid Satisfactory install resolved. Run `./schematic doctor` to locate/configure it."
+            "No valid Satisfactory install resolved. Run `./schematic doctor` to configure it."
         )
     if source in ("config-missing", "env-missing"):
         raise ExtractError(

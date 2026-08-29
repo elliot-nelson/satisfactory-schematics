@@ -94,7 +94,9 @@ def run(theme: str, version: str) -> None:
 
     zip_src = DIST_DIR / slug / f"{slug}.zip"
     if not zip_src.is_file():
-        raise UploadError(f"no built zip at {zip_src}. Run `./schematic build --theme {theme}` first.")
+        raise UploadError(
+            f"no built zip at {zip_src}. Run `./schematic build --theme {theme}` first."
+        )
 
     tag = f"v{version}"
     asset_name = f"{slug}-{version}.zip"

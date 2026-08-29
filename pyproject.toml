@@ -16,7 +16,7 @@ dependencies = [
 ]
 
 [project.scripts]
-sat = "src.main:main"
+schematic = "src.main:main"
 
 [dependency-groups]
 dev = [
