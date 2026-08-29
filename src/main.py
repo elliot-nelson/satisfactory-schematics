@@ -139,6 +139,27 @@ def build(
         raise typer.Exit(1) from exc
 
 
+@app.command()
+def upload(
+    theme: str = typer.Argument(..., help="Theme name/path whose built zip to publish."),
+    version: str = typer.Argument(..., help="Version, e.g. 0.1.0 (release tag becomes v0.1.0)."),
+) -> None:
+    """Attach a built deliverable zip to a GitHub Release (tag ``v<version>``).
+
+    Uploads ``dist/<theme>/<theme>.zip`` as ``<theme>-<version>.zip``. The first upload for a
+    version creates the release pinned to HEAD's sha; later uploads (other themes, or re-runs) just
+    attach to the same release page. Requires the ``gh`` CLI and that HEAD is already pushed.
+    """
+    from src.publish.upload import UploadError
+    from src.publish.upload import run as upload_run
+
+    try:
+        upload_run(theme, version)
+    except UploadError as exc:
+        C.err_console.print(f"[red]upload failed:[/] {exc}")
+        raise typer.Exit(1) from exc
+
+
 def main() -> None:
     """Console-script + ``python -m`` entrypoint. Forces the program name to ``sat``."""
     app(prog_name="sat")

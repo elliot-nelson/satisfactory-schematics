@@ -1,10 +1,14 @@
 """Normalize the raw connection-component dump into ports.json.
 
-Port positions aren't in the docs dump -- conveyor/pipe connections are Blueprint components
-(FGFactoryConnectionComponent = belt, FGPipeConnectionFactory = pipe) on the Build_* blueprint.
-``sf-extract --dump-ports`` records their RelativeLocation/RelativeRotation/direction; here we
-classify role/kind and convert to building-local meters (X fwd, Y right, Z up), keeping the facing
-yaw so the renderer can pick the correct edge. Power connections are ignored.
+Port positions aren't in the docs dump -- conveyor/pipe/power connections are Blueprint components
+(FGFactoryConnectionComponent = belt, FGPipeConnectionFactory = pipe, FGPowerConnectionComponent =
+power) on the Build_* blueprint. ``sf-extract --dump-ports`` records their RelativeLocation/
+RelativeRotation/direction; here we classify role/kind and convert to building-local meters (X fwd,
+Y right, Z up), keeping the facing yaw so the renderer can pick the correct edge.
+
+Power is kept as a ``kind:"power"`` marker (role ``"power"``): unlike belt/pipe mouths it's a nub
+high on the body with no material-flow direction, so the renderer treats it as a positional point
+(no edge-snap, no facing cull) and the finalize overlay stamps it FICSIT orange.
 
 Output contract: ``{name: [{role, kind, pos:[x,y,z] m, yaw: deg}]}``.
 """
@@ -14,11 +18,11 @@ from __future__ import annotations
 from typing import Any
 
 
-def classify(port: dict[str, Any]) -> tuple[str, str] | None:
-    """(role, kind) for an I/O port, or None for non-I/O (power) connections."""
+def classify(port: dict[str, Any]) -> tuple[str, str]:
+    """(role, kind) for a connection: belt/pipe I/O, or the power nub (both are ``"power"``)."""
     cls = port["class"]
     if "PowerConnection" in cls:
-        return None
+        return "power", "power"
     props = port.get("props", {})
     if "Pipe" in cls:
         pct = props.get("mPipeConnectionType", "")
@@ -35,10 +39,7 @@ def build_ports(raw: list[dict], name_by_leaf: dict[str, str]) -> dict[str, list
             continue
         ports: list[dict] = []
         for pt in entry.get("ports", []):
-            c = classify(pt)
-            if c is None:
-                continue
-            role, kind = c
+            role, kind = classify(pt)
             loc = pt["loc"]
             ports.append(
                 {

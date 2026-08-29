@@ -59,12 +59,13 @@ class Theme(BaseModel):
     highlightPorts: bool = True
     inputPortColor: str
     outputPortColor: str
+    powerPortColor: str = "#fa9549"  # FICSIT orange power-connector glyph
     showCollisionBoxTicks: bool = True
     collisionBoxColor: str
     collisionBoxAlpha: int = 180
 
     @field_validator("lineColor", "fillColor", "inputPortColor", "outputPortColor",
-                     "collisionBoxColor")  # fmt: skip
+                     "powerPortColor", "collisionBoxColor")  # fmt: skip
     @classmethod
     def _valid_hex(cls, v: str) -> str:
         _hex_rgb(v)  # raises on bad input
@@ -87,6 +88,7 @@ class Theme(BaseModel):
             "show_ticks": self.showCollisionBoxTicks,
             "in_rgb": _hex_rgb(self.inputPortColor),
             "out_rgb": _hex_rgb(self.outputPortColor),
+            "power_rgb": _hex_rgb(self.powerPortColor),
             "tick_rgba": (*_hex_rgb(self.collisionBoxColor), self.collisionBoxAlpha),
             "potrace": potrace,
         }

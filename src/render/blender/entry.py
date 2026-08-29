@@ -466,7 +466,61 @@ def project_ports(scene, cam_obj, ports, view_name, res_x, res_y, args):
     return out
 
 
-def render_view(cam_obj, mins, maxs, view_name, args, out_base, clearance_bu, ports):
+def _power_occluded(scene, depsgraph, point, view_dir, eps=0.5, far=1000.0):
+    """True if solid geometry sits between the camera side and the power nub (nub hidden behind the
+    body for this view). ``view_dir`` is the unit offset from the model toward the camera; we cast a
+    ray from far on the camera side back toward the model and compare the first hit's depth to the
+    nub's: a hit clearly in front (> ``eps`` bu nearer the camera) means the nub is buried. A power
+    nub sits proud of the surface, so from a side that sees it the first hit lands ~on it."""
+    origin = point + view_dir * far
+    hit = scene.ray_cast(depsgraph, origin, -view_dir)
+    if not hit[0]:
+        return False
+    return (hit[1] - point).dot(view_dir) > eps
+
+
+def project_power_ports(scene, cam_obj, power_ports, view_name, res_x, res_y, args):
+    """Project each power connector as a positional point marker (a small square around its
+    projected 3D point), occlusion-culled by ray-cast so it shows only on views that see the nub."""
+    if not power_ports:
+        return []
+    view = VIEWS[view_name]
+    view_dir = Vector(view["offset"]).normalized()
+    haxis = Vector((0.0, 0.0, 0.0))
+    vaxis = Vector((0.0, 0.0, 0.0))
+    haxis[AXIS_INDEX[view["h"]]] = 1.0
+    vaxis[AXIS_INDEX[view["v"]]] = 1.0
+    half = 0.5 * args.port_size / args.meters_per_unit
+    depsgraph = bpy.context.evaluated_depsgraph_get()
+    out = []
+    for port in power_ports:
+        p = port["pos"]
+        if _power_occluded(scene, depsgraph, p, view_dir):
+            continue
+        xs, ys = [], []
+        for su in (-1.0, 1.0):
+            for sv in (-1.0, 1.0):
+                w = p + haxis * (half * su) + vaxis * (half * sv)
+                ndc = world_to_camera_view(scene, cam_obj, w)
+                xs.append(ndc.x * res_x)
+                ys.append((1.0 - ndc.y) * res_y)
+        out.append(
+            {
+                "role": "power",
+                "kind": "power",
+                "rect": [
+                    round(min(xs), 1),
+                    round(min(ys), 1),
+                    round(max(xs), 1),
+                    round(max(ys), 1),
+                ],
+                "face_on": True,
+            }
+        )
+    return out
+
+
+def render_view(cam_obj, mins, maxs, view_name, args, out_base, clearance_bu, ports, power_ports):
     """Render one view; return its manifest dict. Framing is grid-snapped from the mesh origin and
     expanded to also contain the clearance box; clearance corners + ports project to pixels."""
     view = VIEWS[view_name]
@@ -543,6 +597,9 @@ def render_view(cam_obj, mins, maxs, view_name, args, out_base, clearance_bu, po
         clearance_px = [round(min(xs)), round(min(ys)), round(max(xs)), round(max(ys))]
 
     ports_px = project_ports(scene, cam_obj, ports or [], view_name, res_x, res_y, args)
+    ports_px += project_power_ports(
+        scene, cam_obj, power_ports or [], view_name, res_x, res_y, args
+    )
     gbu = (args.grid / mpu) if (args.grid and args.grid > 0) else 0
     print(f"[raster] {out_path.name}  {res_x}x{res_y} px  ({width_m:.2f} x {height_m:.2f} m)")
     return {
@@ -599,8 +656,11 @@ def main():
     if annot:
         apply_annot_offset(annot, ports, conn_objs, body_center, inv)
 
-    # Canonical orientation for flow-through machines (skip when annot already re-seated the layer).
-    if ports and not args.no_canonical and not annot:
+    # Canonical orientation for flow-through machines: send OUTPUT -> +Y (front). This runs even for
+    # annot buildings -- annot only *co-locates* the port layer onto the body; canonicalizing then
+    # rotates the whole assembly (body + ports + clearance, rigidly, keeping co-location) so the
+    # accelerator obeys the same front=outputs convention as every other machine (SPEC 12.13/15).
+    if ports and not args.no_canonical:
         cyaw = canonical_yaw(ports)
         if cyaw:
             clearance_m = apply_canonical(cyaw, mesh_objects, ports, clearance_m)
@@ -622,8 +682,13 @@ def main():
                 "max": Vector(tuple(math.ceil(mx[i] / gbu - eps) * gbu for i in range(3))),
             }
 
-    if ports and not args.no_port_snap:
-        snap_ports_to_surface(mesh_objects, ports)
+    # Power nubs ride the same body transforms above (annot / canonical) but are NOT belt/pipe
+    # mouths: they get no edge-snap and no facing cull -- they're positional points.
+    io_ports = [p for p in ports if p.get("kind") != "power"]
+    power_ports = [p for p in ports if p.get("kind") == "power"]
+
+    if io_ports and not args.no_port_snap:
+        snap_ports_to_surface(mesh_objects, io_ports)
 
     strokes_module = str(Path(__file__).resolve().parent / "freestyle.py")
     setup_engine(mesh_objects, args.crease_deg, strokes_module)
@@ -634,7 +699,11 @@ def main():
         if view not in VIEWS:
             print(f"[render] WARNING: unknown view '{view}' (skipped)", file=sys.stderr)
             continue
-        results.append(render_view(cam, mins, maxs, view, args, args.outdir, clearance_bu, ports))
+        results.append(
+            render_view(
+                cam, mins, maxs, view, args, args.outdir, clearance_bu, io_ports, power_ports
+            )
+        )
 
     manifest = {
         "name": name,
