@@ -1,33 +1,37 @@
 """Runs INSIDE Blender: ``blender -b -P entry.py -- <args>``.
 
-Produces per-view, true-to-scale orthographic **alpha silhouette** rasters for one ``.glb``.
-Theme-independent (colorless geometry only). Self-contained on purpose -- it imports just
-``bpy`` / ``mathutils`` / stdlib, because Blender runs it in its own interpreter without our
-package on the path.
+For one building ``.glb`` this produces, theme-independently:
+  * per-view **true-to-scale orthographic alpha-silhouette rasters** (Workbench over a transparent
+    film) into ``--outdir``, and
+  * a **projection manifest** ``<name>.json`` into ``--manifest-dir`` -- the keystone that carries,
+    per view, the pixel geometry finalize/annotate/preview need: grid cells, the clearance-box pixel
+    rect (``clearance_px``) and the projected I/O-port pixel rects (``ports_px``).
 
-Framing is ported from the proven standalone renderer (SPEC.md 12.4 / 12.10):
-  * true-to-scale: 1 m -> ``ppm`` px, locked via ortho_scale = max(res)/ppm,
-  * grid-snapped: each frame edge pushed to the next whole grid cell measured from the mesh
-    origin (0,0,0) = the in-game snap point, so tiled images line up exactly as in game.
+To get those pixels right the mesh is first placed into the blueprint-root frame that ports.json /
+clearance.json live in: apply the mesh offset, draw any attached connector mouth-plates, apply the
+per-building ``annot`` correction, then canonicalize flow-through machines (OUTPUT=+Y / INPUT=-Y).
+Ported from the proven standalone ``render.py`` (SPEC.md 12.*). Freestyle line-art strokes and the
+final SVG assembly are a later (finalize) phase; this stage stops at the raster + manifest.
 
-Deferred to later passes (need `prepare` data): mesh offsets, canonical yaw, connectors,
-clearance/port projection, Freestyle strokes. This is just the raster.
+Self-contained: imports only bpy / mathutils / stdlib (Blender runs it in its own interpreter).
 """
 
 import argparse
+import json
 import math
 import sys
 from pathlib import Path
 
 import bpy
-from mathutils import Vector
+from bpy_extras.object_utils import world_to_camera_view
+from mathutils import Matrix, Vector
 
 HALF_PI = math.pi / 2
 PI = math.pi
 
-# Which world axes map to the image's horizontal/vertical, plus the camera orientation and the
-# unit offset direction it sits along. front/back and left/right are swapped vs the raw Blender
-# axes so the labels match Satisfactory's I/O convention (SPEC.md 12.8).
+# Which world axes map to the image's horizontal/vertical, plus the camera orientation and the unit
+# offset direction it sits along. front/back and left/right are swapped vs the raw Blender axes so
+# the labels match Satisfactory's I/O convention (SPEC.md 12.8).
 VIEWS = {
     "top":   {"euler": (0.0,     0.0,  0.0),     "offset": (0, 0, 1),  "h": "x", "v": "y"},
     "front": {"euler": (HALF_PI, 0.0,  PI),      "offset": (0, 1, 0),  "h": "x", "v": "z"},
@@ -40,23 +44,40 @@ AXIS_INDEX = {"x": 0, "y": 1, "z": 2}
 
 
 def parse_args(argv):
-    p = argparse.ArgumentParser(description="Orthographic alpha-silhouette raster (one model).")
+    p = argparse.ArgumentParser(description="Orthographic raster + projection manifest.")
     p.add_argument("--input", required=True, help="Path to a .glb / .gltf.")
-    p.add_argument("--outdir", required=True, help="Directory for <name>_<view>.png.")
+    p.add_argument("--outdir", required=True, help="Directory for <name>_<view>.png rasters.")
+    p.add_argument("--manifest-dir", required=True, help="Directory for the <name>.json manifest.")
     p.add_argument("--name", required=True, help="Output stem (building key).")
     p.add_argument("--views", default="top,front,back,left,right", help="Comma-separated views.")
     p.add_argument("--ppm", type=float, default=20.0, help="Pixels per meter.")
     p.add_argument("--grid", type=float, default=1.0, help="Grid-snap cell size in meters (0=off).")
     p.add_argument("--meters-per-unit", type=float, default=1.0, help="glTF is already meters.")
     p.add_argument(
-        "--robust-gap",
+        "--bbox-gap",
         type=float,
-        default=0.0,
-        help="Trim geometry separated by a gap larger than this (meters). 0=off.",
+        default=2.0,
+        help="Drop stray geometry separated by a gap larger than this (m). 0=off.",
     )
+    # prepare-stage contracts (all optional; missing files degrade gracefully)
+    p.add_argument("--clearance", default=None, help="clearance.json (in-game footprint boxes).")
+    p.add_argument("--ports", default=None, help="ports.json (belt/pipe I/O).")
+    p.add_argument("--mesh-offsets", default=None, help="mesh_offsets.json (blueprint placement).")
+    p.add_argument("--connectors", default=None, help="connectors.json (attached mouth plates).")
+    p.add_argument("--connectors-dir", default=None, help="Folder of connector .glb files.")
+    p.add_argument("--no-canonical", action="store_true", help="Skip OUTPUT=+Y/INPUT=-Y rotation.")
+    p.add_argument("--no-port-snap", action="store_true", help="Keep ports at the raw point.")
+    # port-marker geometry (meters); see render.py --port-* for the rationale
+    p.add_argument("--port-size", type=float, default=2.0)
+    p.add_argument("--port-belt-size", type=float, default=2.0)
+    p.add_argument("--port-pipe-size", type=float, default=1.2)
+    p.add_argument("--port-drop", type=float, default=0.2)
     return p.parse_args(argv)
 
 
+# --------------------------------------------------------------------------------------------------
+# scene / import
+# --------------------------------------------------------------------------------------------------
 def clear_scene():
     bpy.ops.object.select_all(action="SELECT")
     bpy.ops.object.delete(use_global=False)
@@ -70,8 +91,17 @@ def import_model(path):
     return [o for o in bpy.context.scene.objects if o.type == "MESH"]
 
 
+def import_extra(path):
+    """Import another .glb and return ONLY the objects it added (for shared connector meshes)."""
+    before = set(bpy.context.scene.objects)
+    bpy.ops.import_scene.gltf(filepath=path)
+    return [o for o in bpy.context.scene.objects if o.type == "MESH" and o not in before]
+
+
+# --------------------------------------------------------------------------------------------------
+# bounding boxes
+# --------------------------------------------------------------------------------------------------
 def world_bbox(mesh_objects):
-    """(min_corner, max_corner) in world space over all mesh objects' bound boxes."""
     mins = Vector((math.inf, math.inf, math.inf))
     maxs = Vector((-math.inf, -math.inf, -math.inf))
     for obj in mesh_objects:
@@ -121,6 +151,212 @@ def robust_world_bbox(mesh_objects, gap_bu, max_trim_frac=0.02):
     return mins, maxs
 
 
+# --------------------------------------------------------------------------------------------------
+# prepare-data loaders (blueprint -> Blender frame: glTF export negates Y, so we mirror Y here too)
+# --------------------------------------------------------------------------------------------------
+def _load_map(path, name):
+    if not path or not Path(path).is_file():
+        return None
+    try:
+        return json.loads(Path(path).read_text(encoding="utf-8")).get(name)
+    except (OSError, ValueError):
+        return None
+
+
+def load_ports(path, name, mpu):
+    """[{role, kind, pos:Vector(bu), face:Vector}] in the Blender frame (Y mirrored), or []."""
+    entry = _load_map(path, name)
+    if not entry:
+        return []
+    inv = 1.0 / mpu
+    out = []
+    for p in entry:
+        yaw = math.radians(p.get("yaw", 0.0))
+        px, py, pz = p["pos"]
+        out.append(
+            {
+                "role": p["role"],
+                "kind": p.get("kind", "belt"),
+                "pos": Vector((px, -py, pz)) * inv,
+                "face": Vector((math.cos(yaw), -math.sin(yaw), 0.0)),
+            }
+        )
+    return out
+
+
+def load_clearance(path, name):
+    """{'min':Vector, 'max':Vector} meters in the Blender frame (Y mirrored), or None."""
+    box = _load_map(path, name)
+    if not box or "min" not in box or "max" not in box:
+        return None
+    mn, mx = box["min"], box["max"]
+    return {"min": Vector((mn[0], -mx[1], mn[2])), "max": Vector((mx[0], -mn[1], mx[2]))}
+
+
+# --------------------------------------------------------------------------------------------------
+# orientation: mesh offset -> connectors -> annot correction -> canonical yaw
+# --------------------------------------------------------------------------------------------------
+def apply_mesh_offset(mesh_objects, offset, inv):
+    """Move the imported mesh into the blueprint-root frame (rotate about Z by -yaw, then translate
+    (Tx, -Ty, Tz)); the Y sign flips because Blender's frame is Unreal's with Y negated."""
+    if not offset:
+        return
+    loc = offset.get("loc", [0.0, 0.0, 0.0])
+    yaw = float(offset.get("yaw", 0.0))
+    pitch, roll = float(offset.get("pitch", 0.0)), float(offset.get("roll", 0.0))
+    if abs(pitch) > 0.01 or abs(roll) > 0.01:
+        print(
+            f"  WARNING: mesh offset has pitch={pitch:.2f} roll={roll:.2f} (only yaw applied)",
+            file=sys.stderr,
+        )
+    m = Matrix.Translation((loc[0] * inv, -loc[1] * inv, loc[2] * inv)) @ Matrix.Rotation(
+        math.radians(-yaw), 4, "Z"
+    )
+    for obj in mesh_objects:
+        obj.matrix_world = m @ obj.matrix_world
+    bpy.context.view_layer.update()
+
+
+def load_connectors(path, name):
+    return _load_map(path, name) or []
+
+
+def place_connectors(placements, connectors_dir, inv):
+    """Import each connector mouth mesh and move it into the blueprint-root frame (same math as the
+    body offset). Returns the imported objects so the caller can fold them into the model."""
+    added = []
+    for pl in placements:
+        glb = Path(connectors_dir) / f"{pl['mesh']}.glb"
+        if not glb.is_file():
+            print(f"  WARNING: connector mesh missing: {glb} (skipped)", file=sys.stderr)
+            continue
+        objs = import_extra(str(glb))
+        apply_mesh_offset(objs, pl, inv)
+        added.extend(objs)
+    return added
+
+
+def apply_annot_offset(annot, ports, conn_objs, body_center, inv):
+    """Rotate/shift the ANNOTATION layer (ports + connector meshes) about the body's vertical axis
+    to seat it on the body, for buildings whose extracted port frame is out of sync (Particle
+    Accelerator). Driven by the catalog's optional ``annot`` block."""
+    if not annot:
+        return
+    rot_deg = float(annot.get("rot_deg", 0.0))
+    shift = annot.get("shift", [0.0, 0.0, 0.0])
+    cx, cy = body_center
+    m = (
+        Matrix.Translation((cx + shift[0] * inv, cy + shift[1] * inv, shift[2] * inv))
+        @ Matrix.Rotation(math.radians(rot_deg), 4, "Z")
+        @ Matrix.Translation((-cx, -cy, 0.0))
+    )
+    r3 = m.to_3x3()
+    for p in ports:
+        p["pos"] = m @ p["pos"]
+        p["face"] = (r3 @ p["face"]).normalized()
+    for o in conn_objs:
+        o.matrix_world = m @ o.matrix_world
+    if conn_objs:
+        bpy.context.view_layer.update()
+
+
+def canonical_yaw(ports):
+    """Z rotation (deg, multiple of 90) that puts OUTPUTS on +Y and INPUTS on -Y, or None if the
+    building isn't a flow-through machine (junctions have I/O on three sides -> leave as-is)."""
+    ins = [p for p in ports if p["role"] == "input"]
+    outs = [p for p in ports if p["role"] == "output"]
+    if not ins or not outs:
+        return None
+
+    def one_facing(group):
+        keys = {(round(p["face"].x), round(p["face"].y), round(p["face"].z)) for p in group}
+        return next(iter(keys)) if len(keys) == 1 else None
+
+    fin, fout = one_facing(ins), one_facing(outs)
+    if fin is None or fout is None:
+        return None
+    if (round(fin[0]), round(fin[1])) != (-round(fout[0]), -round(fout[1])):
+        return None
+    of = outs[0]["face"]
+    theta = math.degrees(HALF_PI - math.atan2(of.y, of.x))
+    theta = round(theta / 90.0) * 90.0
+    return ((theta + 180.0) % 360.0) - 180.0
+
+
+def _rotate_box_z(box, rot):
+    mn, mx = box["min"], box["max"]
+    xs, ys = [], []
+    for cx in (mn.x, mx.x):
+        for cy in (mn.y, mx.y):
+            w = rot @ Vector((cx, cy, 0.0))
+            xs.append(w.x)
+            ys.append(w.y)
+    return {"min": Vector((min(xs), min(ys), mn.z)), "max": Vector((max(xs), max(ys), mx.z))}
+
+
+def apply_canonical(yaw_deg, mesh_objects, ports, clearance):
+    """Rotate the building (mesh + ports + clearance) about Z by `yaw_deg` (0/None = no-op)."""
+    if not yaw_deg:
+        return clearance
+    rot = Matrix.Rotation(math.radians(yaw_deg), 4, "Z")
+    for obj in mesh_objects:
+        obj.matrix_world = rot @ obj.matrix_world
+    bpy.context.view_layer.update()
+    rot3 = rot.to_3x3()
+    for p in ports:
+        p["pos"] = rot @ p["pos"]
+        p["face"] = rot3 @ p["face"]
+    return _rotate_box_z(clearance, rot) if clearance is not None else None
+
+
+def snap_ports_to_surface(mesh_objects, ports, band=1.0, reach=3.0):
+    """Move each port outward along its facing to the model's actual outer edge (the stored point is
+    often recessed under an overhang). Scans mesh vertices within a narrow lateral band; then makes
+    same-facing ports coplanar to their innermost snapped edge so a side reads as one clean row."""
+    if not ports:
+        return
+    up = Vector((0.0, 0.0, 1.0))
+    infos = []
+    for port in ports:
+        side = port["face"].cross(up)
+        side = side.normalized() if side.length > 1e-6 else Vector((1.0, 0.0, 0.0))
+        infos.append({"side": side, "cur": port["pos"].dot(port["face"]), "best": None})
+
+    for obj in mesh_objects:
+        mw = obj.matrix_world
+        for vtx in obj.data.vertices:
+            w = mw @ vtx.co
+            for port, info in zip(ports, infos, strict=True):
+                if abs((w - port["pos"]).dot(info["side"])) > band:
+                    continue
+                proj = w.dot(port["face"])
+                if proj < info["cur"] - band or proj > info["cur"] + reach:
+                    continue
+                if info["best"] is None or proj > info["best"]:
+                    info["best"] = proj
+
+    for port, info in zip(ports, infos, strict=True):
+        info["snapped"] = info["best"] is not None and info["best"] > info["cur"]
+        if info["snapped"]:
+            port["pos"] = port["pos"] + port["face"] * (info["best"] - info["cur"])
+
+    groups = {}
+    for port, info in zip(ports, infos, strict=True):
+        f = port["face"]
+        groups.setdefault((round(f.x), round(f.y), round(f.z)), []).append((port, info))
+    for grp in groups.values():
+        f = grp[0][0]["face"]
+        snapped = [p["pos"].dot(f) for p, i in grp if i["snapped"]]
+        if not snapped:
+            continue
+        target = min(snapped)
+        for p, _i in grp:
+            p["pos"] = p["pos"] + f * (target - p["pos"].dot(f))
+
+
+# --------------------------------------------------------------------------------------------------
+# render
+# --------------------------------------------------------------------------------------------------
 def setup_engine():
     """Fast, colorless silhouette: Workbench over a transparent film -> alpha == coverage."""
     scene = bpy.context.scene
@@ -139,21 +375,68 @@ def make_camera():
     return cam_obj
 
 
-def render_view(cam_obj, mins, maxs, view_name, args, out_base):
-    """Render one view to <out_base>_<view>.png. mins/maxs are world-space bbox corners (BU)."""
-    view = VIEWS[view_name]
-    mpu = args.meters_per_unit
-    ppm = args.ppm
+def project_ports(scene, cam_obj, ports, view_name, res_x, res_y, args):
+    """Project each visible I/O port to a pixel rect for the marker overlay (near-face culled)."""
+    if not ports:
+        return []
+    offset = Vector(VIEWS[view_name]["offset"]).normalized()
+    up = Vector((0.0, 0.0, 1.0))
+    inv = 1.0 / args.meters_per_unit
+    size = args.port_size * inv
+    half = 0.5 * size
+    drop = args.port_drop * inv
+    out = []
+    for port in ports:
+        face = port["face"]
+        d = face.dot(offset)
+        if d <= -0.15:  # facing away from the camera -> occluded
+            continue
+        reach = (args.port_pipe_size if port["kind"] == "pipe" else args.port_belt_size) * inv
+        side = face.cross(up)
+        side = side.normalized() if side.length > 1e-6 else Vector((1.0, 0.0, 0.0))
+        top = reach - drop
+        xs, ys = [], []
+        for su in (-1.0, 1.0):
+            for sv in (top - size, top):
+                w = port["pos"] + side * (half * su) + up * sv
+                ndc = world_to_camera_view(scene, cam_obj, w)
+                xs.append(ndc.x * res_x)
+                ys.append((1.0 - ndc.y) * res_y)
+        out.append(
+            {
+                "role": port["role"],
+                "kind": port["kind"],
+                "rect": [
+                    round(min(xs), 1),
+                    round(min(ys), 1),
+                    round(max(xs), 1),
+                    round(max(ys), 1),
+                ],
+                "face_on": abs(d) > 0.7,
+            }
+        )
+    return out
 
-    h_ax = AXIS_INDEX[view["h"]]
-    v_ax = AXIS_INDEX[view["v"]]
+
+def render_view(cam_obj, mins, maxs, view_name, args, out_base, clearance_bu, ports):
+    """Render one view; return its manifest dict. Framing is grid-snapped from the mesh origin and
+    expanded to also contain the clearance box; clearance corners + ports project to pixels."""
+    view = VIEWS[view_name]
+    mpu, ppm = args.meters_per_unit, args.ppm
+    h_ax, v_ax = AXIS_INDEX[view["h"]], AXIS_INDEX[view["v"]]
     depth_ax = 3 - h_ax - v_ax
 
     min_h, max_h = mins[h_ax], maxs[h_ax]
     min_v, max_v = mins[v_ax], maxs[v_ax]
+    content_w_m = (max_h - min_h) * mpu
+    content_h_m = (max_v - min_v) * mpu
 
-    # Grid snap: push each edge to the next whole cell, measured from the origin (0,0,0), so the
-    # image's grid coincides with the world grid and the machine's true offset is preserved.
+    if clearance_bu is not None:
+        min_h = min(min_h, clearance_bu["min"][h_ax])
+        max_h = max(max_h, clearance_bu["max"][h_ax])
+        min_v = min(min_v, clearance_bu["min"][v_ax])
+        max_v = max(max_v, clearance_bu["max"][v_ax])
+
     if args.grid and args.grid > 0:
         gbu = args.grid / mpu
         eps = 1e-6
@@ -168,8 +451,6 @@ def render_view(cam_obj, mins, maxs, view_name, args, out_base):
     height_m = (top - bot) * mpu
     res_x = max(1, round(width_m * ppm))
     res_y = max(1, round(height_m * ppm))
-
-    # Lock pixel size to exactly 1/ppm m by deriving ortho_scale from the larger pixel dimension.
     span_m = max(res_x, res_y) / ppm
     ortho_scale_bu = span_m / mpu
 
@@ -177,7 +458,6 @@ def render_view(cam_obj, mins, maxs, view_name, args, out_base):
     scene.render.resolution_x = res_x
     scene.render.resolution_y = res_y
     scene.render.resolution_percentage = 100
-
     cam_obj.data.ortho_scale = ortho_scale_bu
     cam_obj.rotation_euler = view["euler"]
 
@@ -186,39 +466,144 @@ def render_view(cam_obj, mins, maxs, view_name, args, out_base):
     target[h_ax] = (left + right) * 0.5
     target[v_ax] = (bot + top) * 0.5
     target[depth_ax] = center[depth_ax]
-
     max_dim = max(maxs[i] - mins[i] for i in range(3))
     dist = max_dim * 4.0 + 10.0
     cam_obj.location = target + Vector(view["offset"]) * dist
     cam_obj.data.clip_start = 0.001
     cam_obj.data.clip_end = dist * 4.0 + 10.0
 
-    out_path = Path(args.outdir) / f"{args.name}_{view_name}.png"
+    out_path = Path(out_base) / f"{args.name}_{view_name}.png"
     scene.render.filepath = str(out_path)
     bpy.ops.render.render(write_still=True)
+
+    clearance_px = None
+    if clearance_bu is not None:
+        cmn, cmx = clearance_bu["min"], clearance_bu["max"]
+        xs, ys = [], []
+        for cx in (cmn[0], cmx[0]):
+            for cy in (cmn[1], cmx[1]):
+                for cz in (cmn[2], cmx[2]):
+                    ndc = world_to_camera_view(scene, cam_obj, Vector((cx, cy, cz)))
+                    xs.append(ndc.x * res_x)
+                    ys.append((1.0 - ndc.y) * res_y)
+        clearance_px = [round(min(xs)), round(min(ys)), round(max(xs)), round(max(ys))]
+
+    ports_px = project_ports(scene, cam_obj, ports or [], view_name, res_x, res_y, args)
+    gbu = (args.grid / mpu) if (args.grid and args.grid > 0) else 0
     print(f"[raster] {out_path.name}  {res_x}x{res_y} px  ({width_m:.2f} x {height_m:.2f} m)")
+    return {
+        "view": view_name,
+        "origin_cells_from_left": round(-left / gbu) if gbu else None,
+        "origin_cells_from_bottom": round(-bot / gbu) if gbu else None,
+        "cells_w": round((right - left) / gbu) if gbu else None,
+        "cells_h": round((top - bot) / gbu) if gbu else None,
+        "clearance_px": clearance_px,
+        "ports_px": ports_px,
+        "file": out_path.name,
+        "width_px": res_x,
+        "height_px": res_y,
+        "width_m": round(width_m, 4),
+        "height_m": round(height_m, 4),
+        "content_w_m": round(content_w_m, 4),
+        "content_h_m": round(content_h_m, 4),
+        "ppm": ppm,
+    }
 
 
 def main():
     argv = sys.argv[sys.argv.index("--") + 1 :] if "--" in sys.argv else []
     args = parse_args(argv)
     Path(args.outdir).mkdir(parents=True, exist_ok=True)
+    Path(args.manifest_dir).mkdir(parents=True, exist_ok=True)
+    name = args.name
+    inv = 1.0 / args.meters_per_unit
 
     clear_scene()
     mesh_objects = import_model(args.input)
     if not mesh_objects:
         raise SystemExit(f"[render] no mesh objects imported from {args.input}")
 
-    gap_bu = (args.robust_gap / args.meters_per_unit) if args.robust_gap > 0 else 0.0
-    mins, maxs = robust_world_bbox(mesh_objects, gap_bu)
+    # Place the body where the blueprint puts it, then capture the body-only centre (the axis the
+    # annot layer rotates about) BEFORE folding in the shared connector meshes.
+    mesh_offset = _load_map(args.mesh_offsets, name)
+    if mesh_offset:
+        apply_mesh_offset(mesh_objects, mesh_offset, inv)
+    bmn, bmx = world_bbox(mesh_objects)
+    body_center = ((bmn[0] + bmx[0]) / 2.0, (bmn[1] + bmx[1]) / 2.0)
+
+    conn_objs = []
+    placements = load_connectors(args.connectors, name)
+    if placements and args.connectors_dir:
+        conn_objs = place_connectors(placements, args.connectors_dir, inv)
+        mesh_objects = mesh_objects + conn_objs
+
+    ports = load_ports(args.ports, name, args.meters_per_unit)
+    clearance_m = load_clearance(args.clearance, name)
+
+    annot = mesh_offset.get("annot") if mesh_offset else None
+    if annot:
+        apply_annot_offset(annot, ports, conn_objs, body_center, inv)
+
+    # Canonical orientation for flow-through machines (skip when annot already re-seated the layer).
+    if ports and not args.no_canonical and not annot:
+        cyaw = canonical_yaw(ports)
+        if cyaw:
+            clearance_m = apply_canonical(cyaw, mesh_objects, ports, clearance_m)
+
+    mins, maxs = robust_world_bbox(mesh_objects, args.bbox_gap / args.meters_per_unit)
+    dims_bu = maxs - mins
+
+    # Clearance box (m) -> blender units, snapped OUTWARD to whole grid cells so footprint ticks
+    # land on grid lines (== image edges).
+    clearance_bu = None
+    if clearance_m is not None:
+        clearance_bu = {"min": clearance_m["min"] * inv, "max": clearance_m["max"] * inv}
+        if args.grid and args.grid > 0:
+            gbu = args.grid / args.meters_per_unit
+            eps = 1e-6
+            mn, mx = clearance_bu["min"], clearance_bu["max"]
+            clearance_bu = {
+                "min": Vector(tuple(math.floor(mn[i] / gbu + eps) * gbu for i in range(3))),
+                "max": Vector(tuple(math.ceil(mx[i] / gbu - eps) * gbu for i in range(3))),
+            }
+
+    if ports and not args.no_port_snap:
+        snap_ports_to_surface(mesh_objects, ports)
 
     setup_engine()
     cam = make_camera()
+    results = []
     for view in args.views.split(","):
         view = view.strip()
         if view not in VIEWS:
-            raise SystemExit(f"[render] unknown view: {view}")
-        render_view(cam, mins, maxs, view, args, args.outdir)
+            print(f"[render] WARNING: unknown view '{view}' (skipped)", file=sys.stderr)
+            continue
+        results.append(render_view(cam, mins, maxs, view, args, args.outdir, clearance_bu, ports))
+
+    manifest = {
+        "name": name,
+        "source": Path(args.input).name,
+        "ppm": args.ppm,
+        "grid_m": args.grid,
+        "meters_per_unit": args.meters_per_unit,
+        "bbox_m": {
+            "x": round(dims_bu.x * args.meters_per_unit, 4),
+            "y": round(dims_bu.y * args.meters_per_unit, 4),
+            "z": round(dims_bu.z * args.meters_per_unit, 4),
+        },
+        "clearance_m": (
+            {
+                "min": [round(v * args.meters_per_unit, 3) for v in clearance_bu["min"]],
+                "max": [round(v * args.meters_per_unit, 3) for v in clearance_bu["max"]],
+            }
+            if clearance_bu is not None
+            else None
+        ),
+        "views": results,
+    }
+    manifest_path = Path(args.manifest_dir) / f"{name}.json"
+    manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+    print(f"[manifest] {manifest_path.name}  ({len(results)} views)")
 
 
 main()

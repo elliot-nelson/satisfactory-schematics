@@ -1,9 +1,10 @@
-"""Host-side driver for the Blender raster stage.
+"""Host-side driver for the Blender render stage.
 
 Locates Blender, then for each extracted building body (``build/01-extract/models/*.glb``) spawns
-``blender -b -P blender/entry.py`` to write per-view alpha silhouettes into
-``build/03-render/raster/``. Theme-independent and incremental (skips models whose rasters already
-exist unless ``force``).
+``blender -b -P blender/entry.py``, passing the prepare-stage contracts so the body is oriented
+into the blueprint frame. Blender writes per-view alpha silhouettes into ``build/03-render/raster/``
+and a projection manifest into ``build/03-render/manifests/``. Theme-independent and incremental
+(skips a model when its rasters + manifest already exist, unless ``force``).
 """
 
 from __future__ import annotations
@@ -15,12 +16,14 @@ from pathlib import Path
 
 from src.cli import console as C
 from src.cli.config import Config
-from src.cli.context import EXTRACT_DIR, RENDER_DIR, ensure
+from src.cli.context import EXTRACT_DIR, PREPARE_DIR, RENDER_DIR, ensure
 from src.common.plan import BuildPlan, StageError
 
 ENTRY = Path(__file__).resolve().parent / "blender" / "entry.py"
 MODELS_DIR = EXTRACT_DIR / "models"
+CONNECTORS_DIR = EXTRACT_DIR / "models" / "connectors"
 RASTER_DIR = RENDER_DIR / "raster"
+MANIFEST_DIR = RENDER_DIR / "manifests"
 
 
 def find_blender(cfg: Config) -> str:
@@ -55,32 +58,46 @@ def _models(plan: BuildPlan) -> list[Path]:
 
 
 def _needs_render(name: str, views: list[str]) -> bool:
+    if not (MANIFEST_DIR / f"{name}.json").exists():
+        return True
     return any(not (RASTER_DIR / f"{name}_{v}.png").exists() for v in views)
 
 
+def _prepare_arg(flag: str, path: Path) -> list[str]:
+    """Pass a prepare contract only if it exists (render degrades gracefully without it)."""
+    return [flag, str(path)] if path.exists() else []
+
+
 def run(cfg: Config, plan: BuildPlan) -> None:
-    """Render alpha-silhouette rasters for the selected building bodies."""
+    """Render silhouettes + projection manifests for the selected building bodies."""
     blender = find_blender(cfg)
     views = plan.views or cfg.render.views
     models = _models(plan)
     ensure(RASTER_DIR)
+    ensure(MANIFEST_DIR)
 
     rendered = 0
     for glb in models:
         name = glb.stem
         if not plan.force and not _needs_render(name, views):
-            C.console.print(f"[dim]skip[/] {name} (rasters present; --force to redo)")
+            C.console.print(f"[dim]skip[/] {name} (up to date; --force to redo)")
             continue
         C.rule(f"{name}  ({len(views)} views)")
         cmd = [
             blender, "-b", "-P", str(ENTRY), "--",
             "--input", str(glb),
             "--outdir", str(RASTER_DIR),
+            "--manifest-dir", str(MANIFEST_DIR),
             "--name", name,
             "--views", ",".join(views),
             "--ppm", str(cfg.render.ppm),
             "--grid", str(cfg.render.grid),
             "--meters-per-unit", str(cfg.render.metersPerUnit),
+            "--connectors-dir", str(CONNECTORS_DIR),
+            *_prepare_arg("--clearance", PREPARE_DIR / "clearance.json"),
+            *_prepare_arg("--ports", PREPARE_DIR / "ports.json"),
+            *_prepare_arg("--mesh-offsets", PREPARE_DIR / "mesh_offsets.json"),
+            *_prepare_arg("--connectors", PREPARE_DIR / "connectors.json"),
         ]  # fmt: skip
         proc = subprocess.run(cmd, text=True, capture_output=True)
         if proc.returncode != 0:
@@ -90,6 +107,8 @@ def run(cfg: Config, plan: BuildPlan) -> None:
         for line in proc.stdout.splitlines():
             if line.startswith("[raster]"):
                 C.console.print(f"  {line[9:]}")
+            elif line.startswith("[manifest]"):
+                C.console.print(f"  [dim]{line[11:]}[/]")
         rendered += 1
 
-    C.console.print(f"\n[green]Render complete[/] -> {RASTER_DIR}  ({rendered} rendered)")
+    C.console.print(f"\n[green]Render complete[/] -> {RENDER_DIR}  ({rendered} rendered)")
