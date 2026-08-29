@@ -1,9 +1,9 @@
 """Finalize stage driver (host, pure Python -- no Blender).
 
 For the selected theme, turn each rendered view (raster alpha + Freestyle strokes + manifest) into a
-themed SVG under ``build/04-svg/<theme>/`` plus a rasterized PNG under ``build/05-png/<theme>/`` (each
-PNG is the SVG rasterized at its native size, so the two can't drift; skipped only if
-``rsvg-convert`` is missing). Theme-dependent and incremental (skips a view whose SVG is newer than
+themed SVG under ``build/04-svg/<theme>/`` plus a rasterized PNG under ``build/05-png/<theme>/``.
+Each PNG is just the SVG rasterized at its native size (so the two can't drift), skipped only if
+``rsvg-convert`` is missing. Theme-dependent and incremental (skips a view whose SVG is newer than
 all its inputs unless ``force``). This is the per-theme pass; everything it reads is shared.
 """
 
