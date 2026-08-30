@@ -1,7 +1,8 @@
 ---
-// Sticky title bar styled like FICSIT caution tape (yellow/gray diagonal hazard stripes). Brand +
-// nav ride on dark "control-panel" plates so they stay legible on the busy background. The GitHub
-// corner owns the top-right, so we keep clear of it.
+// Sticky title bar styled like FICSIT caution tape (yellow/gray diagonal hazard stripes). The brand
+// and the three action buttons ride on dark "control-panel" plates so they stay legible on the busy
+// background.
+import { REPO_URL } from "../lib/site";
 ---
 
 <header class="site-header">
@@ -13,10 +14,36 @@
       <span class="brand-2">SCHEMATICS</span>
     </span>
   </a>
-  <nav class="site-nav plate">
-    <a href="#preview">Preview</a>
-    <span class="nav-sep" aria-hidden="true"></span>
-    <button type="button" data-download class="nav-download">Download</button>
+  <nav class="site-nav">
+    <a href="#preview" class="nav-btn">
+      <svg viewBox="0 0 16 16" aria-hidden="true">
+        <rect x="1.5" y="1.5" width="5.5" height="5.5" rx="1"></rect>
+        <rect x="9" y="1.5" width="5.5" height="5.5" rx="1"></rect>
+        <rect x="1.5" y="9" width="5.5" height="5.5" rx="1"></rect>
+        <rect x="9" y="9" width="5.5" height="5.5" rx="1"></rect>
+      </svg>
+      <span>Browse Previews</span>
+    </a>
+    <button type="button" data-download class="nav-btn">
+      <svg viewBox="0 0 16 16" aria-hidden="true">
+        <path
+          d="M8 1v8m0 0L5 6m3 3l3-3M2 12h12"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.6"
+          stroke-linecap="round"
+          stroke-linejoin="round"></path>
+      </svg>
+      <span>Download Now</span>
+    </button>
+    <a href={REPO_URL} target="_blank" rel="noopener" class="nav-btn nav-btn-git">
+      <svg viewBox="0 0 16 16" aria-hidden="true">
+        <path
+          d="M8 0a8 8 0 0 0-2.53 15.59c.4.07.55-.17.55-.38v-1.33c-2.23.49-2.7-1.07-2.7-1.07-.36-.93-.89-1.18-.89-1.18-.73-.5.05-.49.05-.49.8.06 1.23.83 1.23.83.71 1.23 1.87.87 2.33.67.07-.52.28-.87.5-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.83-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.22 2.2.82a7.6 7.6 0 0 1 4 0c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.52.56.83 1.28.83 2.15 0 3.07-1.87 3.75-3.65 3.95.29.24.54.72.54 1.45v2.15c0 .21.15.46.55.38A8 8 0 0 0 8 0Z"
+        ></path>
+      </svg>
+      <span>View on GitHub</span>
+    </a>
   </nav>
 </header>
 
@@ -30,7 +57,6 @@
     justify-content: space-between;
     gap: 1rem;
     padding: 0.6rem clamp(1rem, 4vw, 2.5rem);
-    padding-right: 96px; /* keep clear of the 80px github corner */
     border-bottom: 2px solid #0a0a0b;
     box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
     isolation: isolate;
@@ -97,40 +123,55 @@
   }
 
   .site-nav {
-    gap: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
   }
-  .site-nav a,
-  .nav-download {
+  .nav-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.85rem;
     font-family: var(--font-display);
-    font-size: 0.82rem;
+    font-size: 0.78rem;
+    font-weight: 500;
     letter-spacing: 0.06em;
     text-transform: uppercase;
-  }
-  .site-nav a {
     color: var(--color-ink);
-    transition: color 0.12s var(--ease-out-quart);
-  }
-  .site-nav a:hover {
-    color: var(--color-ficsit);
-  }
-  .nav-sep {
-    width: 1px;
-    height: 16px;
-    background: var(--color-metal);
-  }
-  .nav-download {
-    color: var(--color-ficsit);
-    background: transparent;
-    border: none;
-    padding: 0;
+    background: color-mix(in srgb, var(--color-void) 92%, transparent);
+    border: 1px solid #000;
+    border-radius: 9px;
     cursor: pointer;
-    transition: color 0.12s var(--ease-out-quart);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.05),
+      0 2px 8px rgba(0, 0, 0, 0.5);
+    transition:
+      color 0.12s var(--ease-out-quart),
+      border-color 0.12s var(--ease-out-quart);
   }
-  .nav-download:hover {
-    color: var(--color-ficsit-glow);
+  .nav-btn:hover {
+    color: var(--color-ficsit);
+    border-color: var(--color-ficsit);
+  }
+  .nav-btn svg {
+    width: 15px;
+    height: 15px;
+    flex: none;
+    fill: currentColor;
+  }
+  .nav-btn-git svg {
+    fill: currentColor;
   }
 
-  @media (max-width: 640px) {
+  @media (max-width: 860px) {
+    .nav-btn span {
+      display: none;
+    }
+    .nav-btn {
+      padding: 0.5rem 0.6rem;
+    }
+  }
+  @media (max-width: 560px) {
     .brand-text {
       display: none;
     }
