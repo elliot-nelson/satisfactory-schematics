@@ -1,18 +1,21 @@
 ---
-// Slim sticky header: brand mark on the left, jump links in the middle. The GitHub corner owns the
-// top-right, so we keep clear of it.
+// Sticky title bar styled like FICSIT caution tape (yellow/gray diagonal hazard stripes). Brand +
+// nav ride on dark "control-panel" plates so they stay legible on the busy background. The GitHub
+// corner owns the top-right, so we keep clear of it.
 ---
 
 <header class="site-header">
-  <a href="#top" class="brand">
-    <span class="brand-badge hazard"></span>
+  <div class="hazard-bg" aria-hidden="true"></div>
+  <a href="#top" class="brand plate">
+    <span class="brand-badge"></span>
     <span class="brand-text">
       <span class="brand-1">SATISFACTORY</span>
       <span class="brand-2">SCHEMATICS</span>
     </span>
   </a>
-  <nav class="site-nav">
+  <nav class="site-nav plate">
     <a href="#preview">Preview</a>
+    <span class="nav-sep" aria-hidden="true"></span>
     <button type="button" data-download class="nav-download">Download</button>
   </nav>
 </header>
@@ -26,23 +29,54 @@
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
-    padding: 0.75rem clamp(1rem, 4vw, 2.5rem);
-    padding-right: 92px; /* keep clear of the 80px github corner */
-    background: color-mix(in srgb, var(--color-void) 82%, transparent);
-    backdrop-filter: blur(10px);
-    border-bottom: 1px solid var(--color-metal);
+    padding: 0.6rem clamp(1rem, 4vw, 2.5rem);
+    padding-right: 96px; /* keep clear of the 80px github corner */
+    border-bottom: 2px solid #0a0a0b;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+    isolation: isolate;
   }
-  .brand {
+  /* the caution-tape background, dimmed a touch so the plates pop */
+  .hazard-bg {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background-image: repeating-linear-gradient(
+      -45deg,
+      #e7b528 0,
+      #e7b528 15px,
+      #26262b 15px,
+      #26262b 30px
+    );
+  }
+  .hazard-bg::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0.12), rgba(0, 0, 0, 0.34));
+  }
+
+  /* dark control-panel plate that brand + nav sit on */
+  .plate {
     display: flex;
     align-items: center;
     gap: 0.6rem;
+    padding: 0.4rem 0.8rem;
+    background: color-mix(in srgb, var(--color-void) 92%, transparent);
+    border: 1px solid #000;
+    border-radius: 9px;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.05),
+      0 2px 8px rgba(0, 0, 0, 0.5);
   }
+
   .brand-badge {
-    width: 22px;
-    height: 22px;
+    width: 20px;
+    height: 20px;
     border-radius: 5px;
+    background: var(--color-ficsit);
     border: 1px solid var(--color-ficsit-deep);
-    box-shadow: 0 0 14px rgba(250, 149, 73, 0.35);
+    box-shadow: 0 0 12px rgba(250, 149, 73, 0.5);
+    flex: none;
   }
   .brand-text {
     display: flex;
@@ -61,47 +95,47 @@
     font-weight: 600;
     color: var(--color-ficsit);
   }
+
   .site-nav {
-    display: flex;
-    align-items: center;
-    gap: 1.25rem;
+    gap: 0.85rem;
   }
-  .site-nav a {
+  .site-nav a,
+  .nav-download {
     font-family: var(--font-display);
-    font-size: 0.85rem;
+    font-size: 0.82rem;
     letter-spacing: 0.06em;
     text-transform: uppercase;
-    color: var(--color-ink-dim);
+  }
+  .site-nav a {
+    color: var(--color-ink);
     transition: color 0.12s var(--ease-out-quart);
   }
   .site-nav a:hover {
     color: var(--color-ficsit);
   }
+  .nav-sep {
+    width: 1px;
+    height: 16px;
+    background: var(--color-metal);
+  }
   .nav-download {
-    font-family: var(--font-display);
-    font-size: 0.85rem;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
     color: var(--color-ficsit);
     background: transparent;
-    border: 1px solid var(--color-metal);
-    border-radius: 7px;
-    padding: 0.4rem 0.85rem;
+    border: none;
+    padding: 0;
     cursor: pointer;
-    transition:
-      border-color 0.12s var(--ease-out-quart),
-      background 0.12s var(--ease-out-quart);
+    transition: color 0.12s var(--ease-out-quart);
   }
   .nav-download:hover {
-    border-color: var(--color-ficsit);
-    background: rgba(250, 149, 73, 0.08);
+    color: var(--color-ficsit-glow);
   }
+
   @media (max-width: 640px) {
     .brand-text {
       display: none;
     }
-    .site-nav {
-      gap: 0.75rem;
+    .brand {
+      padding: 0.4rem 0.55rem;
     }
   }
 </style>

@@ -10,7 +10,7 @@ const active = themeBySlug(DEFAULT_THEME)!;
   <div class="picker-left">
     <label for="theme-select" class="picker-label">Theme</label>
     <div class="select-wrap">
-      <select id="theme-select" aria-label="Choose a theme">
+      <select id="theme-select" class="js-theme-select" aria-label="Choose a theme">
         {
           THEMES.map((t) => (
             <option value={t.slug} selected={t.slug === DEFAULT_THEME}>
@@ -23,7 +23,7 @@ const active = themeBySlug(DEFAULT_THEME)!;
         ><path d="M1 1l5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.6"></path></svg
       >
     </div>
-    <p class="picker-blurb" id="theme-blurb">{active.blurb}</p>
+    <p class="picker-blurb" data-theme-blurb>{active.blurb}</p>
   </div>
   <button type="button" data-download class="btn-ficsit picker-download">
     <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true">

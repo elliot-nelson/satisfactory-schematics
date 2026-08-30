@@ -1,27 +1,35 @@
 // All the site's interactivity in one tiny island: theme switching, the zoom lightbox, and the
-// download shutterbox (incl. resolving the latest GitHub release). No framework -- just DOM.
+// download shutterbox. No framework -- just DOM.
 
-import { THEMES, DEFAULT_THEME } from "../lib/themes";
-import { RELEASES_API, LATEST_RELEASE_URL } from "../lib/site";
+import { DEFAULT_THEME, themeBySlug } from "../lib/themes";
+import { CURRENT_VERSION, zipUrl } from "../lib/site";
 
 const STORAGE_KEY = "sf-theme";
-const blurbBySlug = new Map(THEMES.map((t) => [t.slug, t.blurb]));
 
 /* ---------------------------------------------------------------- theme swap */
 
 function applyTheme(slug: string): void {
-  if (!blurbBySlug.has(slug)) return;
+  const info = themeBySlug(slug);
+  if (!info) return;
   document.documentElement.dataset.theme = slug;
+
   for (const img of document.querySelectorAll<HTMLImageElement>("img[data-file]")) {
     img.src = `/themes/${slug}/svg/${img.dataset.file}`;
   }
-  const blurb = document.getElementById("theme-blurb");
-  if (blurb) blurb.textContent = blurbBySlug.get(slug) ?? "";
-  const sel = document.getElementById("theme-select") as HTMLSelectElement | null;
-  if (sel && sel.value !== slug) sel.value = slug;
-  // keep an open lightbox in sync
+  for (const blurb of document.querySelectorAll<HTMLElement>("[data-theme-blurb]")) {
+    blurb.textContent = info.blurb;
+  }
+  for (const sel of document.querySelectorAll<HTMLSelectElement>("select.js-theme-select")) {
+    if (sel.value !== slug) sel.value = slug;
+  }
+  for (const link of document.querySelectorAll<HTMLAnchorElement>("[data-download-zip]")) {
+    link.href = zipUrl(slug);
+    const name = link.querySelector<HTMLElement>("[data-zip-name]");
+    if (name) name.textContent = `${slug}-${CURRENT_VERSION}.zip`;
+  }
   const lbImg = document.getElementById("lightbox-img") as HTMLImageElement | null;
   if (lbImg?.dataset.file) lbImg.src = `/themes/${slug}/svg/${lbImg.dataset.file}`;
+
   try {
     localStorage.setItem(STORAGE_KEY, slug);
   } catch {
@@ -36,10 +44,10 @@ function initTheme(): void {
   } catch {
     /* ignore */
   }
-  const sel = document.getElementById("theme-select") as HTMLSelectElement | null;
-  sel?.addEventListener("change", () => applyTheme(sel.value));
-  if (saved && saved !== DEFAULT_THEME) applyTheme(saved);
-  else document.documentElement.dataset.theme = DEFAULT_THEME;
+  for (const sel of document.querySelectorAll<HTMLSelectElement>("select.js-theme-select")) {
+    sel.addEventListener("change", () => applyTheme(sel.value));
+  }
+  applyTheme(saved && themeBySlug(saved) ? saved : DEFAULT_THEME);
 }
 
 /* ------------------------------------------------------------------ lightbox */
@@ -54,82 +62,6 @@ function openLightbox(img: HTMLImageElement): void {
   lbImg.alt = img.alt;
   if (cap) cap.textContent = img.alt;
   showOverlay(lb);
-}
-
-/* ------------------------------------------------------------- download modal */
-
-interface ReleaseAsset {
-  name: string;
-  browser_download_url: string;
-  size: number;
-}
-interface Release {
-  tag_name: string;
-  assets: ReleaseAsset[];
-}
-
-let releaseLoaded = false;
-
-function humanSize(bytes: number): string {
-  if (bytes >= 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
-  return `${Math.round(bytes / 1024)} KB`;
-}
-
-function escapeRe(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-async function loadRelease(): Promise<void> {
-  if (releaseLoaded) return;
-  releaseLoaded = true;
-
-  const sub = document.getElementById("dl-release");
-  let release: Release | null = null;
-  try {
-    const cached = sessionStorage.getItem("sf-release");
-    if (cached) release = JSON.parse(cached);
-  } catch {
-    /* ignore */
-  }
-
-  if (!release) {
-    try {
-      const res = await fetch(RELEASES_API, { headers: { Accept: "application/vnd.github+json" } });
-      if (res.ok) {
-        release = (await res.json()) as Release;
-        try {
-          sessionStorage.setItem("sf-release", JSON.stringify(release));
-        } catch {
-          /* ignore */
-        }
-      }
-    } catch {
-      /* offline / rate-limited -> fall through to fallback links */
-    }
-  }
-
-  if (!release) {
-    if (sub) {
-      sub.innerHTML = `No release fetched &mdash; <a href="${LATEST_RELEASE_URL}" target="_blank" rel="noopener" style="color:var(--color-ficsit)">open the releases page &rarr;</a>`;
-    }
-    return;
-  }
-
-  if (sub) sub.textContent = `Latest release: ${release.tag_name}`;
-
-  for (const link of document.querySelectorAll<HTMLAnchorElement>("[data-theme-zip]")) {
-    const slug = link.dataset.themeZip!;
-    const asset = release.assets.find(
-      (a) => new RegExp(`^${escapeRe(slug)}-\\d`).test(a.name) && a.name.endsWith(".zip"),
-    );
-    const sizeEl = link.querySelector<HTMLElement>("[data-size]");
-    if (asset) {
-      link.href = asset.browser_download_url;
-      if (sizeEl) sizeEl.textContent = humanSize(asset.size);
-    } else if (sizeEl) {
-      sizeEl.textContent = "ZIP";
-    }
-  }
 }
 
 /* -------------------------------------------------------------- overlay utils */
@@ -162,7 +94,6 @@ function initOverlays(): void {
     if (dl && modal) {
       e.preventDefault();
       showOverlay(modal);
-      void loadRelease();
       return;
     }
 

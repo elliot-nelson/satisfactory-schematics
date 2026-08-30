@@ -7,11 +7,7 @@ import { counts } from "../lib/manifest";
 <section class="hero" id="top">
   <div class="hero-glow" aria-hidden="true"></div>
   <div class="hero-inner">
-    <p class="eyebrow">FICSIT-approved blueprints* &middot; *not really</p>
-    <h1 class="hero-title">
-      Build it on paper<br />before you <span class="accent">build it for real</span>.
-    </h1>
-    <p class="hero-tagline">{TAGLINE}</p>
+    <h1 class="hero-title">{TAGLINE}</h1>
 
     <div class="hero-cta">
       <a href="#preview" class="btn-ficsit">Browse the preview</a>
@@ -21,10 +17,10 @@ import { counts } from "../lib/manifest";
     <div class="hero-figure">
       <div class="hero-figure-frame">
         <img
-          src="/docs/blender_back.png"
-          alt="Orthographic blueprint of a Blender, rear view, in architect blue"
-          width="820"
-          height="800"
+          src="/docs/excalidraw_foundries_ports.png"
+          alt="Orthographic blueprints of foundries with input and output port markers, in Excalidraw blue"
+          width="1416"
+          height="1074"
           fetchpriority="high"
         />
       </div>
@@ -60,30 +56,14 @@ import { counts } from "../lib/manifest";
     margin: 0 auto;
     text-align: center;
   }
-  .eyebrow {
-    font-family: var(--font-display);
-    font-size: 0.8rem;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    color: var(--color-ink-dim);
-    margin: 0 0 1.25rem;
-  }
   .hero-title {
-    font-size: clamp(2.4rem, 6vw, 4.25rem);
-    line-height: 1.02;
+    max-width: 24ch;
+    margin: 0 auto;
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    line-height: 1.08;
     font-weight: 700;
     letter-spacing: 0.005em;
-    margin: 0;
     text-wrap: balance;
-  }
-  .hero-title .accent {
-    color: var(--color-ficsit);
-  }
-  .hero-tagline {
-    max-width: 40rem;
-    margin: 1.5rem auto 0;
-    font-size: clamp(1rem, 2.2vw, 1.2rem);
-    color: var(--color-ink-dim);
   }
   .hero-cta {
     display: flex;
@@ -117,7 +97,7 @@ import { counts } from "../lib/manifest";
   }
   .hero-figure-frame img {
     display: block;
-    width: min(560px, 78vw);
+    width: min(760px, 84vw);
     height: auto;
     filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.45));
   }
