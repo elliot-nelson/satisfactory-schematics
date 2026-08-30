@@ -1,0 +1,159 @@
+@import "tailwindcss";
+
+/* Self-hosted fonts (no network dep, no FOUT). */
+@import "@fontsource/oswald/400.css";
+@import "@fontsource/oswald/500.css";
+@import "@fontsource/oswald/600.css";
+@import "@fontsource/oswald/700.css";
+@import "@fontsource/inter/400.css";
+@import "@fontsource/inter/500.css";
+@import "@fontsource/inter/600.css";
+
+/* ------------------------------------------------------------------ *
+ * FICSIT design tokens. Tailwind v4 is CSS-first: everything under
+ * @theme becomes a utility (bg-void, text-ficsit, font-display, ...).
+ * ------------------------------------------------------------------ */
+@theme {
+  /* palette */
+  --color-ficsit: #fa9549; /* the HUD / collision-tick orange -- our primary accent */
+  --color-ficsit-deep: #e27b2c; /* hover / deeper accent */
+  --color-ficsit-glow: #ffb066;
+  --color-void: #0e0e10; /* page background ("deep black") */
+  --color-panel: #17171b; /* raised panels */
+  --color-panel-2: #1e1e24;
+  --color-metal: #2a2a30; /* borders / secondary panels */
+  --color-metal-light: #c9cdd4; /* metal hairlines / muted text */
+  --color-paper: #f4f1e8; /* schematic card background */
+  --color-ink: #e8e6df; /* body text on dark */
+  --color-ink-dim: #9a9a94;
+
+  /* type */
+  --font-display: "Oswald", ui-sans-serif, system-ui, sans-serif;
+  --font-body:
+    "Inter", ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
+  /* motion */
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+/* ------------------------------------------------------------------ *
+ * base
+ * ------------------------------------------------------------------ */
+* {
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 80px;
+}
+body {
+  margin: 0;
+  background: var(--color-void);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+a {
+  color: inherit;
+  text-decoration: none;
+}
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+/* ------------------------------------------------------------------ *
+ * FICSIT signature bits
+ * ------------------------------------------------------------------ */
+
+/* Diagonal hazard stripes. Use as a thin accent rail (see .hazard-rail). */
+.hazard {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    var(--color-ficsit) 0,
+    var(--color-ficsit) 12px,
+    #14140f 12px,
+    #14140f 24px
+  );
+}
+.hazard-rail {
+  height: 6px;
+  background-image: repeating-linear-gradient(
+    -45deg,
+    var(--color-ficsit) 0,
+    var(--color-ficsit) 10px,
+    #14140f 10px,
+    #14140f 20px
+  );
+  opacity: 0.9;
+}
+
+/* Brushed-metal panel: subtle top highlight + 1px metal border. */
+.panel {
+  background: linear-gradient(180deg, var(--color-panel-2), var(--color-panel));
+  border: 1px solid var(--color-metal);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 10px 30px rgba(0, 0, 0, 0.35);
+}
+
+/* Schematic card "paper" with the faint dotted grid (carried from preview.css). */
+.paper {
+  background-color: var(--color-paper);
+  background-image: radial-gradient(circle at 1px 1px, rgba(0, 0, 0, 0.06) 1px, transparent 0);
+  background-size: 16px 16px;
+}
+
+/* A chunky FICSIT button. */
+.btn-ficsit {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: #1a1205;
+  background: linear-gradient(180deg, var(--color-ficsit-glow), var(--color-ficsit));
+  border: 1px solid var(--color-ficsit-deep);
+  border-radius: 8px;
+  padding: 0.7rem 1.25rem;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    0 8px 20px rgba(250, 149, 73, 0.2);
+  transition:
+    transform 0.12s var(--ease-out-quart),
+    box-shadow 0.12s var(--ease-out-quart);
+}
+.btn-ficsit:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    0 10px 26px rgba(250, 149, 73, 0.32);
+}
+
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-display);
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--color-ink);
+  background: transparent;
+  border: 1px solid var(--color-metal);
+  border-radius: 8px;
+  padding: 0.7rem 1.25rem;
+  transition:
+    border-color 0.12s var(--ease-out-quart),
+    color 0.12s var(--ease-out-quart);
+}
+.btn-ghost:hover {
+  border-color: var(--color-ficsit);
+  color: var(--color-ficsit);
+}

@@ -1,0 +1,107 @@
+---
+// Slim sticky header: brand mark on the left, jump links in the middle. The GitHub corner owns the
+// top-right, so we keep clear of it.
+---
+
+<header class="site-header">
+  <a href="#top" class="brand">
+    <span class="brand-badge hazard"></span>
+    <span class="brand-text">
+      <span class="brand-1">SATISFACTORY</span>
+      <span class="brand-2">SCHEMATICS</span>
+    </span>
+  </a>
+  <nav class="site-nav">
+    <a href="#preview">Preview</a>
+    <button type="button" data-download class="nav-download">Download</button>
+  </nav>
+</header>
+
+<style>
+  .site-header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.75rem clamp(1rem, 4vw, 2.5rem);
+    padding-right: 92px; /* keep clear of the 80px github corner */
+    background: color-mix(in srgb, var(--color-void) 82%, transparent);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--color-metal);
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+  .brand-badge {
+    width: 22px;
+    height: 22px;
+    border-radius: 5px;
+    border: 1px solid var(--color-ficsit-deep);
+    box-shadow: 0 0 14px rgba(250, 149, 73, 0.35);
+  }
+  .brand-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 0.98;
+    font-family: var(--font-display);
+    letter-spacing: 0.14em;
+  }
+  .brand-1 {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--color-ink);
+  }
+  .brand-2 {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--color-ficsit);
+  }
+  .site-nav {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+  }
+  .site-nav a {
+    font-family: var(--font-display);
+    font-size: 0.85rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-ink-dim);
+    transition: color 0.12s var(--ease-out-quart);
+  }
+  .site-nav a:hover {
+    color: var(--color-ficsit);
+  }
+  .nav-download {
+    font-family: var(--font-display);
+    font-size: 0.85rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-ficsit);
+    background: transparent;
+    border: 1px solid var(--color-metal);
+    border-radius: 7px;
+    padding: 0.4rem 0.85rem;
+    cursor: pointer;
+    transition:
+      border-color 0.12s var(--ease-out-quart),
+      background 0.12s var(--ease-out-quart);
+  }
+  .nav-download:hover {
+    border-color: var(--color-ficsit);
+    background: rgba(250, 149, 73, 0.08);
+  }
+  @media (max-width: 640px) {
+    .brand-text {
+      display: none;
+    }
+    .site-nav {
+      gap: 0.75rem;
+    }
+  }
+</style>

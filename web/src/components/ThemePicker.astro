@@ -1,0 +1,119 @@
+---
+// The theme dropdown + a download button, sticky at the top of the preview section. Changing the
+// dropdown swaps every drawing's theme (handled by the app island via a path-prefix swap).
+import { THEMES, DEFAULT_THEME, themeBySlug } from "../lib/themes";
+
+const active = themeBySlug(DEFAULT_THEME)!;
+---
+
+<div class="picker" id="theme-picker">
+  <div class="picker-left">
+    <label for="theme-select" class="picker-label">Theme</label>
+    <div class="select-wrap">
+      <select id="theme-select" aria-label="Choose a theme">
+        {
+          THEMES.map((t) => (
+            <option value={t.slug} selected={t.slug === DEFAULT_THEME}>
+              {t.name}
+            </option>
+          ))
+        }
+      </select>
+      <svg class="chev" viewBox="0 0 12 8" aria-hidden="true"
+        ><path d="M1 1l5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.6"></path></svg
+      >
+    </div>
+    <p class="picker-blurb" id="theme-blurb">{active.blurb}</p>
+  </div>
+  <button type="button" data-download class="btn-ficsit picker-download">
+    <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true">
+      <path
+        d="M8 1v8m0 0L5 6m3 3l3-3M2 12h12"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.6"
+        stroke-linecap="round"
+        stroke-linejoin="round"></path>
+    </svg>
+    Download
+  </button>
+</div>
+
+<style>
+  .picker {
+    position: sticky;
+    top: 56px;
+    z-index: 30;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    padding: 0.85rem clamp(1rem, 3vw, 1.5rem);
+    margin-bottom: 2rem;
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--color-panel) 92%, transparent);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--color-metal);
+  }
+  .picker-left {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    flex-wrap: wrap;
+  }
+  .picker-label {
+    font-family: var(--font-display);
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-ink-dim);
+  }
+  .select-wrap {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+  }
+  #theme-select {
+    appearance: none;
+    font-family: var(--font-display);
+    font-size: 0.95rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    color: var(--color-ink);
+    background: var(--color-void);
+    border: 1px solid var(--color-metal);
+    border-radius: 8px;
+    padding: 0.5rem 2.1rem 0.5rem 0.85rem;
+    cursor: pointer;
+  }
+  #theme-select:hover {
+    border-color: var(--color-ficsit);
+  }
+  #theme-select:focus-visible {
+    outline: 2px solid var(--color-ficsit);
+    outline-offset: 1px;
+  }
+  .chev {
+    position: absolute;
+    right: 0.7rem;
+    width: 12px;
+    height: 8px;
+    color: var(--color-ficsit);
+    pointer-events: none;
+  }
+  .picker-blurb {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--color-ink-dim);
+    max-width: 30rem;
+  }
+  @media (max-width: 720px) {
+    .picker-blurb {
+      display: none;
+    }
+    .picker {
+      top: 52px;
+    }
+  }
+</style>
