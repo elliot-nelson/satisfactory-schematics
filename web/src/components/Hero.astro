@@ -1,5 +1,5 @@
 ---
-// Landing hero: big central schematic, the one-line pitch, and the two CTAs.
+// Landing hero: the one-line pitch + the big central schematic. Actions live in the top nav now.
 import { TAGLINE } from "../lib/site";
 import { counts } from "../lib/manifest";
 ---
@@ -8,11 +8,6 @@ import { counts } from "../lib/manifest";
   <div class="hero-glow" aria-hidden="true"></div>
   <div class="hero-inner">
     <h1 class="hero-title">{TAGLINE}</h1>
-
-    <div class="hero-cta">
-      <a href="#preview" class="btn-ficsit">Browse the preview</a>
-      <button type="button" data-download class="btn-ghost">Download a pack</button>
-    </div>
 
     <div class="hero-figure">
       <div class="hero-figure-frame">
@@ -41,7 +36,7 @@ import { counts } from "../lib/manifest";
   .hero {
     position: relative;
     overflow: hidden;
-    padding: clamp(3rem, 8vw, 6rem) 1.5rem 4rem;
+    padding: clamp(2.25rem, 5vw, 3.75rem) 1.5rem 4rem;
   }
   .hero-glow {
     position: absolute;
