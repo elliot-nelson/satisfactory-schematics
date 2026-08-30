@@ -10,8 +10,15 @@ interface Props {
 
 const {
   title = "Satisfactory Schematics",
-  description = "Pre-rendered, true-to-scale orthographic images of Satisfactory buildings, for use in your favorite diagramming tools.",
+  description = "Pre-rendered, true-to-scale orthographic images of Satisfactory buildings (top, front, back, left, right) for use in Excalidraw, draw.io, and your other favorite diagramming tools.",
 } = Astro.props;
+
+// Absolute URLs for canonical + social scrapers. Falls back to a relative path if `site` is unset.
+const origin = Astro.site ?? new URL("https://satisfactory-schematics.7tonshark.com");
+const canonical = new URL(Astro.url.pathname, origin).href;
+const ogImage = new URL("/docs/excalidraw_foundries_ports.png", origin).href;
+const ogImageAlt = "Orthographic blueprints of Satisfactory foundries with input and output ports";
+const siteName = "Satisfactory Schematics";
 ---
 
 <!doctype html>
@@ -20,14 +27,32 @@ const {
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="generator" content={Astro.generator} />
+    <meta name="theme-color" content="#0e0e10" />
+
     <title>{title}</title>
     <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+
+    <!-- Open Graph (LinkedIn, Facebook, Slack, Discord, ...) -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={siteName} />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
-    <meta property="og:type" content="website" />
-    <meta property="og:image" content="/docs/excalidraw_foundries_ports.png" />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:width" content="1416" />
+    <meta property="og:image:height" content="1074" />
+    <meta property="og:image:alt" content={ogImageAlt} />
+
+    <!-- Twitter / X -->
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
+    <meta name="twitter:image:alt" content={ogImageAlt} />
+
     <link rel="icon" type="image/png" href="/docs/blender_back.png" />
+    <link rel="apple-touch-icon" href="/docs/blender_back.png" />
   </head>
   <body>
     <slot />

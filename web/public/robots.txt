@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://satisfactory-schematics.7tonshark.com/sitemap.xml
