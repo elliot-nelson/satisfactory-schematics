@@ -1,5 +1,5 @@
 ---
-// Footer: the brand mark, repo links, and the all-important "not official" disclaimer.
+// Footer: the brand mark + repo links. (The disclaimer lives in its own feature card now.)
 import { REPO_URL, RELEASES_URL } from "../lib/site";
 ---
 
@@ -21,12 +21,6 @@ import { REPO_URL, RELEASES_URL } from "../lib/site";
         </li>
       </ul>
     </div>
-
-    <p class="disclaimer">
-      This project is completely independent and is not endorsed by, sponsored by, or affiliated
-      with the game Satisfactory or its developers, Coffee Stain Studios. All game titles, logos,
-      and assets belong to their respective copyright and trademark owners.
-    </p>
   </div>
 </footer>
 
@@ -43,7 +37,7 @@ import { REPO_URL, RELEASES_URL } from "../lib/site";
   }
   .footer-top {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
     gap: 1.5rem;
     flex-wrap: wrap;
@@ -72,21 +66,18 @@ import { REPO_URL, RELEASES_URL } from "../lib/site";
     margin: 0;
     padding: 0;
     display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem 1.5rem;
+    flex-direction: column;
+    gap: 0.55rem;
     font-size: 0.88rem;
     color: var(--color-ink-dim);
+    text-align: right;
   }
   .links a:hover {
     color: var(--color-ficsit);
   }
-  .disclaimer {
-    margin: 2rem 0 0;
-    padding-top: 1.5rem;
-    border-top: 1px solid var(--color-metal);
-    font-size: 0.76rem;
-    line-height: 1.6;
-    color: var(--color-ink-dim);
-    max-width: 60rem;
+  @media (max-width: 480px) {
+    .links {
+      text-align: left;
+    }
   }
 </style>

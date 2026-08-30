@@ -70,26 +70,25 @@ h3 {
  * FICSIT signature bits
  * ------------------------------------------------------------------ */
 
-/* Diagonal hazard stripes. Use as a thin accent rail (see .hazard-rail). */
+/* Diagonal caution-tape stripes -- yellow/gray, matching the navbar header. */
 .hazard {
   background-image: repeating-linear-gradient(
     -45deg,
-    var(--color-ficsit) 0,
-    var(--color-ficsit) 12px,
-    #14140f 12px,
-    #14140f 24px
+    #e7b528 0,
+    #e7b528 15px,
+    #26262b 15px,
+    #26262b 30px
   );
 }
 .hazard-rail {
   height: 6px;
   background-image: repeating-linear-gradient(
     -45deg,
-    var(--color-ficsit) 0,
-    var(--color-ficsit) 10px,
-    #14140f 10px,
-    #14140f 20px
+    #e7b528 0,
+    #e7b528 12px,
+    #26262b 12px,
+    #26262b 24px
   );
-  opacity: 0.9;
 }
 
 /* Brushed-metal panel: subtle top highlight + 1px metal border. */

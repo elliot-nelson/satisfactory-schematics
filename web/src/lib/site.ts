@@ -1,19 +1,18 @@
-// Site-wide constants. Keep repo coordinates in one place so the GitHub corner, download modal, and
-// release fetch all agree.
+// Site-wide constants. Repo coordinates + the current release version all come from release.json,
+// the one file you edit when you cut a new version. The download modal, the footer links, and the
+// CI `fetch-dist` script (which rebuilds dist/ from the published release) all read the same source.
+import release from "../../release.json";
 
-export const REPO_OWNER = "elliot-nelson";
-export const REPO_NAME = "satisfactory-schematics";
+export const REPO_OWNER = release.owner;
+export const REPO_NAME = release.repo;
 export const REPO_URL = `https://github.com/${REPO_OWNER}/${REPO_NAME}`;
 export const RELEASES_URL = `${REPO_URL}/releases`;
 export const LATEST_RELEASE_URL = `${RELEASES_URL}/latest`;
 
-// ---------------------------------------------------------------------------
-// Current release the download page points at. Bump this when you cut + upload a
-// new version (`./schematic upload --all-themes --version x.y.z`). The download
-// links are built as .../releases/download/v<VERSION>/<slug>-<VERSION>.zip, which
-// matches how the upload command names its assets.
-// ---------------------------------------------------------------------------
-export const CURRENT_VERSION = "0.1.0";
+// The release the download page points at. Bump the "version" in release.json after you upload a new
+// one (`./schematic upload --all-themes --version x.y.z`). Download links are built as
+// .../releases/download/v<VERSION>/<slug>-<VERSION>.zip, matching how upload names its assets.
+export const CURRENT_VERSION = release.version;
 export const CURRENT_TAG = `v${CURRENT_VERSION}`;
 
 /** Direct download URL for a theme's zip on the current release. */

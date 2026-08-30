@@ -1,7 +1,7 @@
 ---
-// The "why you'd want these" section: a 2x2 grid of the four headline features. This is where the
-// scale + legend details live now (they used to be scattered in the footer / hero stats).
-import { counts } from "../lib/manifest";
+// The "why you'd want these" section: a 2x2 grid of the four headline features, plus a full-width
+// disclaimer card. This is where the scale + legend details live now (they used to be scattered in
+// the footer / hero stats).
 ---
 
 <section class="features" id="features">
@@ -19,9 +19,7 @@ import { counts } from "../lib/manifest";
       </span>
       <h3>Top &amp; Side Views</h3>
       <p>
-        All {counts.buildings} buildings, each drawn from five orthographic angles &mdash; top, front,
-        back, left, and right. No perspective distortion, just the true footprint you actually build
-        on.
+        Each building drawn from five orthographic angles &mdash; top, front, back, left, and right.
       </p>
     </article>
 
@@ -77,9 +75,27 @@ import { counts } from "../lib/manifest";
       </span>
       <h3>Multiple Themes</h3>
       <p>
-        Four ready-made looks: crisp <strong>Blue Schematic</strong> or hand-drawn
-        <strong>Blue Excalidraw</strong>, each with a clean annotation-free variant. Switch the whole
-        board with one dropdown.
+        Four ready-made looks: crisp <strong>Blue Schematic</strong> or
+        hand-drawn <strong>Blue Excalidraw</strong>, each with a clean annotation-free variant.
+        Browse available themes below.
+      </p>
+    </article>
+
+    <article class="feature panel feature-wide">
+      <span class="feature-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24">
+          <path d="M12 3 22 20H2L12 3Z" fill="none" stroke="currentColor" stroke-width="1.6"
+            stroke-linejoin="round"></path>
+          <path d="M12 10v4" fill="none" stroke="currentColor" stroke-width="1.6"
+            stroke-linecap="round"></path>
+          <circle cx="12" cy="17" r="1" fill="currentColor"></circle>
+        </svg>
+      </span>
+      <h3>Disclaimer</h3>
+      <p>
+        This project is completely independent and is not endorsed by, sponsored by, or affiliated
+        with the game Satisfactory or its developers, Coffee Stain Studios. All game titles, logos,
+        and assets belong to their respective copyright and trademark owners.
       </p>
     </article>
   </div>
@@ -99,6 +115,9 @@ import { counts } from "../lib/manifest";
   .feature {
     border-radius: 14px;
     padding: clamp(1.25rem, 3vw, 1.75rem);
+  }
+  .feature-wide {
+    grid-column: 1 / -1;
   }
   .feature-icon {
     display: inline-grid;
