@@ -1,0 +1,12 @@
+# Netlify config. Netlify clones the repo and, by default, runs everything from the repo root -- but
+# our Astro site lives in web/, so we set `base = "web"`. With a base set, Netlify cd's into web/,
+# auto-runs `npm install` there, then runs `command`. Every path below is relative to that base.
+#
+# The build box can't run Blender, so we don't render here -- we download. `build:netlify` first runs
+# scripts/fetch-dist.mjs, which pulls the theme packs from our published GitHub Release and recreates
+# ../dist/ (i.e. <repo-root>/dist/). Then the normal `build` syncs dist/ -> public/ and runs astro,
+# emitting web/dist/. `publish` is relative to base, so "dist" == web/dist. Node comes from web/.nvmrc.
+[build]
+  base = "web"
+  command = "npm run build:netlify"
+  publish = "dist"

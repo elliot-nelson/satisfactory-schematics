@@ -11,7 +11,7 @@
     "fetch-dist": "node scripts/fetch-dist.mjs",
     "dev": "npm run sync && astro dev",
     "build": "npm run sync && astro check && astro build",
-    "build:ci": "npm run fetch-dist && npm run build",
+    "build:netlify": "npm run fetch-dist && npm run build",
     "preview": "astro preview",
     "astro": "astro"
   },

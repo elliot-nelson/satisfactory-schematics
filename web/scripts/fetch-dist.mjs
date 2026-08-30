@@ -6,7 +6,7 @@
 // matching release, and unzips every attached <slug>-<version>.zip into ../dist/<slug>/ -- leaving
 // dist/ looking exactly as if it had been built locally. Then `npm run build` (sync + astro) works.
 //
-// Usage (from web/):  npm run fetch-dist      (or `npm run build:ci` to fetch + build in one go)
+// Usage (from web/):  npm run fetch-dist      (or `npm run build:netlify` to fetch + build in one go)
 //
 // Our releases page is public, so no credentials are needed -- this happily runs on Netlify's build
 // box. If GITHUB_TOKEN happens to be set (e.g. inside Actions) we send it on the API call to dodge

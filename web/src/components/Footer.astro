@@ -9,7 +9,7 @@ import { REPO_URL, RELEASES_URL } from "../lib/site";
     <div class="footer-top">
       <div class="footer-brand">
         <span class="footer-badge"></span>
-        <span>Satisfactory Schematics</span>
+        <span>Satisfactory <span class="footer-brand-accent">Schematics</span></span>
       </div>
       <ul class="links">
         <li><a href={REPO_URL} target="_blank" rel="noopener">GitHub repo &rarr;</a></li>
@@ -52,6 +52,9 @@ import { REPO_URL, RELEASES_URL } from "../lib/site";
     text-transform: uppercase;
     font-size: 0.92rem;
     color: var(--color-ink);
+  }
+  .footer-brand-accent {
+    color: var(--color-ficsit);
   }
   .footer-badge {
     width: 18px;
