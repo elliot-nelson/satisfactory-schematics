@@ -1,0 +1,172 @@
+---
+// The "why you'd want these" section: a 2x2 grid of the four headline features. This is where the
+// scale + legend details live now (they used to be scattered in the footer / hero stats).
+import { counts } from "../lib/manifest";
+---
+
+<section class="features" id="features">
+  <div class="features-grid">
+    <article class="feature panel">
+      <span class="feature-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24">
+          <path
+            d="M12 2 21 7v10l-9 5-9-5V7l9-5Z M12 2v20 M3 7l9 5 9-5"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.6"
+            stroke-linejoin="round"></path>
+        </svg>
+      </span>
+      <h3>Top &amp; Side Views</h3>
+      <p>
+        All {counts.buildings} buildings, each drawn from five orthographic angles &mdash; top, front,
+        back, left, and right. No perspective distortion, just the true footprint you actually build
+        on.
+      </p>
+    </article>
+
+    <article class="feature panel">
+      <span class="feature-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24">
+          <rect x="2" y="8" width="20" height="8" rx="1" fill="none" stroke="currentColor"
+            stroke-width="1.6"></rect>
+          <path d="M6 8v3 M10 8v4 M14 8v3 M18 8v4" fill="none" stroke="currentColor"
+            stroke-width="1.4" stroke-linecap="round"></path>
+        </svg>
+      </span>
+      <h3>Consistent Scale</h3>
+      <p>
+        Everything is drawn at <strong>1&thinsp;m = 20&thinsp;px</strong>, so buildings line up when
+        you drop them side by side. One foundation = 8&thinsp;m &mdash; set an 8&thinsp;px grid in
+        Excalidraw, or draw.io's default 10&thinsp;px lines up too.
+      </p>
+    </article>
+
+    <article class="feature panel">
+      <span class="feature-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="1.6"
+          ></circle>
+          <circle cx="12" cy="12" r="2.5" fill="currentColor"></circle>
+          <path d="M12 1v3 M12 20v3 M1 12h3 M20 12h3" fill="none" stroke="currentColor"
+            stroke-width="1.6" stroke-linecap="round"></path>
+        </svg>
+      </span>
+      <h3>Annotations</h3>
+      <p>
+        Input and output ports plus collision-box corners are marked, so you can route belts and
+        pipes and check spacing before laying a single foundation.
+      </p>
+      <ul class="legend">
+        <li><span class="chip in"></span> Input port</li>
+        <li><span class="chip out"></span> Output port</li>
+        <li><span class="chip tick"></span> Collision corner</li>
+      </ul>
+    </article>
+
+    <article class="feature panel">
+      <span class="feature-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24">
+          <rect x="3" y="3" width="8" height="8" rx="1.5" fill="none" stroke="currentColor"
+            stroke-width="1.6"></rect>
+          <rect x="13" y="3" width="8" height="8" rx="1.5" fill="currentColor"></rect>
+          <rect x="3" y="13" width="8" height="8" rx="1.5" fill="currentColor"></rect>
+          <rect x="13" y="13" width="8" height="8" rx="1.5" fill="none" stroke="currentColor"
+            stroke-width="1.6"></rect>
+        </svg>
+      </span>
+      <h3>Multiple Themes</h3>
+      <p>
+        Four ready-made looks: crisp <strong>Blue Schematic</strong> or hand-drawn
+        <strong>Blue Excalidraw</strong>, each with a clean annotation-free variant. Switch the whole
+        board with one dropdown.
+      </p>
+    </article>
+  </div>
+</section>
+
+<style>
+  .features {
+    max-width: 72rem;
+    margin: 0 auto;
+    padding: clamp(1rem, 3vw, 2rem) clamp(1rem, 4vw, 2.5rem) clamp(2rem, 5vw, 3.5rem);
+  }
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.1rem;
+  }
+  .feature {
+    border-radius: 14px;
+    padding: clamp(1.25rem, 3vw, 1.75rem);
+  }
+  .feature-icon {
+    display: inline-grid;
+    place-items: center;
+    width: 42px;
+    height: 42px;
+    margin-bottom: 1rem;
+    border-radius: 10px;
+    color: var(--color-ficsit);
+    background: color-mix(in srgb, var(--color-ficsit) 14%, transparent);
+    border: 1px solid color-mix(in srgb, var(--color-ficsit) 40%, var(--color-metal));
+  }
+  .feature-icon svg {
+    width: 24px;
+    height: 24px;
+  }
+  .feature h3 {
+    margin: 0 0 0.5rem;
+    font-size: 1.2rem;
+    color: var(--color-ink);
+  }
+  .feature p {
+    margin: 0;
+    font-size: 0.92rem;
+    line-height: 1.6;
+    color: var(--color-ink-dim);
+  }
+  .feature strong {
+    color: var(--color-ink);
+    font-weight: 600;
+  }
+
+  .legend {
+    list-style: none;
+    margin: 1rem 0 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.1rem;
+    font-size: 0.82rem;
+    color: var(--color-ink-dim);
+  }
+  .legend li {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .chip {
+    width: 13px;
+    height: 13px;
+    border-radius: 3px;
+    flex: none;
+  }
+  .chip.in {
+    background: #c82828;
+  }
+  .chip.out {
+    background: #28aa46;
+  }
+  .chip.tick {
+    background: transparent;
+    border: 2px solid var(--color-ficsit);
+    border-radius: 2px;
+  }
+
+  @media (max-width: 720px) {
+    .features-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

@@ -1,7 +1,6 @@
 ---
 // Landing hero: the one-line pitch + the big central schematic. Actions live in the top nav now.
 import { TAGLINE } from "../lib/site";
-import { counts } from "../lib/manifest";
 ---
 
 <section class="hero" id="top">
@@ -18,15 +17,6 @@ import { counts } from "../lib/manifest";
           height="1074"
           fetchpriority="high"
         />
-      </div>
-      <div class="hero-stats">
-        <span><strong>{counts.buildings}</strong> builds</span>
-        <span class="dot"></span>
-        <span><strong>{counts.views}</strong> views</span>
-        <span class="dot"></span>
-        <span><strong>4</strong> themes</span>
-        <span class="dot"></span>
-        <span><strong>1&thinsp;m = 20&thinsp;px</strong></span>
       </div>
     </div>
   </div>
@@ -88,26 +78,5 @@ import { counts } from "../lib/manifest";
     width: min(760px, 84vw);
     height: auto;
     filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.45));
-  }
-  .hero-stats {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-wrap: wrap;
-    gap: 0.65rem;
-    margin-top: 1.5rem;
-    font-size: 0.9rem;
-    color: var(--color-ink-dim);
-  }
-  .hero-stats strong {
-    color: var(--color-ink);
-    font-weight: 600;
-  }
-  .hero-stats .dot {
-    width: 4px;
-    height: 4px;
-    border-radius: 50%;
-    background: var(--color-ficsit);
-    opacity: 0.7;
   }
 </style>

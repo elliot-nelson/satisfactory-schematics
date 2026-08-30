@@ -1,39 +1,25 @@
 ---
-// Footer: the legend + scale notes, the all-important "not official" disclaimer, and repo links.
+// Footer: the brand mark, repo links, and the all-important "not official" disclaimer.
 import { REPO_URL, RELEASES_URL } from "../lib/site";
 ---
 
 <footer class="site-footer">
   <div class="hazard-rail"></div>
   <div class="footer-inner">
-    <div class="footer-cols">
-      <div class="footer-col">
-        <h3>Reading the drawings</h3>
-        <ul class="legend">
-          <li><span class="chip in"></span> Input port (belt / pipe)</li>
-          <li><span class="chip out"></span> Output port (belt / pipe)</li>
-          <li><span class="chip tick"></span> Collision-box corner ticks</li>
-        </ul>
+    <div class="footer-top">
+      <div class="footer-brand">
+        <span class="footer-badge"></span>
+        <span>Satisfactory Schematics</span>
       </div>
-      <div class="footer-col">
-        <h3>Scale</h3>
-        <p>
-          Drawn at <strong>1&thinsp;m = 20&thinsp;px</strong>. In Excalidraw set the grid step to 8;
-          in draw.io the default 10&thinsp;px grid lines up too. One foundation = 8&thinsp;m.
-        </p>
-      </div>
-      <div class="footer-col">
-        <h3>Project</h3>
-        <ul class="links">
-          <li><a href={REPO_URL} target="_blank" rel="noopener">GitHub repo &rarr;</a></li>
-          <li><a href={RELEASES_URL} target="_blank" rel="noopener">All Releases &rarr;</a></li>
-          <li>
-            <a href={`${REPO_URL}/blob/main/DEVELOPER_GUIDE.md`} target="_blank" rel="noopener"
-              >Developer guide &rarr;</a
-            >
-          </li>
-        </ul>
-      </div>
+      <ul class="links">
+        <li><a href={REPO_URL} target="_blank" rel="noopener">GitHub repo &rarr;</a></li>
+        <li><a href={RELEASES_URL} target="_blank" rel="noopener">All Releases &rarr;</a></li>
+        <li>
+          <a href={`${REPO_URL}/blob/main/DEVELOPER_GUIDE.md`} target="_blank" rel="noopener"
+            >Developer guide &rarr;</a
+          >
+        </li>
+      </ul>
     </div>
 
     <p class="disclaimer">
@@ -53,78 +39,54 @@ import { REPO_URL, RELEASES_URL } from "../lib/site";
   .footer-inner {
     max-width: 72rem;
     margin: 0 auto;
-    padding: 3rem clamp(1rem, 4vw, 2.5rem) 2.5rem;
+    padding: 2.5rem clamp(1rem, 4vw, 2.5rem) 2.5rem;
   }
-  .footer-cols {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 2rem;
+  .footer-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+    flex-wrap: wrap;
   }
-  .footer-col h3 {
-    font-size: 0.8rem;
-    letter-spacing: 0.14em;
+  .footer-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    font-family: var(--font-display);
+    font-weight: 600;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: var(--color-ficsit);
-    margin: 0 0 0.85rem;
-  }
-  .footer-col p {
-    margin: 0;
-    font-size: 0.88rem;
-    color: var(--color-ink-dim);
-    line-height: 1.6;
-  }
-  .footer-col strong {
+    font-size: 0.92rem;
     color: var(--color-ink);
   }
-  .legend,
+  .footer-badge {
+    width: 18px;
+    height: 18px;
+    border-radius: 5px;
+    background: var(--color-ficsit);
+    border: 1px solid var(--color-ficsit-deep);
+    flex: none;
+  }
   .links {
     list-style: none;
     margin: 0;
     padding: 0;
     display: flex;
-    flex-direction: column;
-    gap: 0.55rem;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.5rem;
     font-size: 0.88rem;
     color: var(--color-ink-dim);
-  }
-  .legend li {
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-  }
-  .chip {
-    width: 14px;
-    height: 14px;
-    border-radius: 3px;
-    flex: none;
-  }
-  .chip.in {
-    background: #c82828;
-  }
-  .chip.out {
-    background: #28aa46;
-  }
-  .chip.tick {
-    background: transparent;
-    border: 2px solid #fa9549;
-    border-radius: 2px;
   }
   .links a:hover {
     color: var(--color-ficsit);
   }
   .disclaimer {
-    margin: 2.5rem 0 0;
+    margin: 2rem 0 0;
     padding-top: 1.5rem;
     border-top: 1px solid var(--color-metal);
     font-size: 0.76rem;
     line-height: 1.6;
     color: var(--color-ink-dim);
     max-width: 60rem;
-  }
-  @media (max-width: 640px) {
-    .footer-cols {
-      grid-template-columns: 1fr;
-      gap: 1.75rem;
-    }
   }
 </style>
