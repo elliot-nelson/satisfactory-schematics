@@ -44,7 +44,7 @@ tools: # doctor checks presence/version + offers installs
     optional: true # only needed for native extractor development; docker needs none on host
 
 render:
-  ppm: 20 # 1 m = 20 px = one Excalidraw cell
+  # pixels-per-meter is per-theme (themes/<name>.yaml -> pixelsPerMeter), so it can vary by look.
   grid: 1.0 # meters
   metersPerUnit: 1.0 # glTF is already in meters
   views: ["top", "front", "back", "left", "right"]

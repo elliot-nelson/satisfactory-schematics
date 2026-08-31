@@ -1,6 +1,8 @@
 theme:
   name: Blue Excalidraw (Clean)
 
+  pixelsPerMeter: 20 # 1 m = 20 px = one Excalidraw cell
+
   lineColor: "#1a478c"
   fillColor: "#1a478c"
   fillAlpha: 0.30

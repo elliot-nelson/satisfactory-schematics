@@ -5,12 +5,14 @@ Locates Blender, then for each extracted building body (``build/01-extract/model
 the blueprint frame. Segment pieces (belts/pipes/beams/junctions, from ``models/segments/``) get a
 second pass -- Blender tiles/bends the source tile into each named piece (belt_4m, belt_corner...).
 Blender writes per-view alpha silhouettes into ``build/03-render/raster/`` and a projection manifest
-into ``build/03-render/manifests/``. Theme-independent and incremental (skips a piece when its
-rasters + manifest already exist, unless ``force``).
+into ``build/03-render/manifests/``. The geometry/strokes are theme-independent; only the pixel
+scale (``pixelsPerMeter``) comes from the theme, so a piece is re-rendered when it's missing OR when
+the last render used a different scale (unless ``force`` forces it regardless).
 """
 
 from __future__ import annotations
 
+import json
 import os
 import shutil
 import subprocess
@@ -21,7 +23,8 @@ from src.cli.config import Config
 from src.cli.context import EXTRACT_DIR, PREPARE_DIR, RENDER_DIR, ensure
 from src.common.buildings import load_catalog
 from src.common.plan import BuildPlan, StageError
-from src.common.segments import SegmentJob, segment_jobs
+from src.common.segments import FULL_VIEW_KINDS, ROTATE_Z_BY_KIND, SegmentJob, segment_jobs
+from src.common.theme import ThemeError, load_theme
 
 ENTRY = Path(__file__).resolve().parent / "blender" / "entry.py"
 MODELS_DIR = EXTRACT_DIR / "models"
@@ -71,8 +74,16 @@ def _segments(cfg: Config, plan: BuildPlan) -> list[SegmentJob]:
     return jobs
 
 
-def _needs_render(name: str, views: list[str]) -> bool:
-    if not (MANIFEST_DIR / f"{name}.json").exists():
+def _needs_render(name: str, views: list[str], ppm: float) -> bool:
+    manifest = MANIFEST_DIR / f"{name}.json"
+    if not manifest.exists():
+        return True
+    # ppm is per-theme now, and rasters are shared across themes -- so if the last render used a
+    # different scale we redo it (else this theme would finalize stale-resolution rasters).
+    try:
+        if float(json.loads(manifest.read_text(encoding="utf-8")).get("ppm", 0)) != float(ppm):
+            return True
+    except (OSError, ValueError):
         return True
     return any(
         not (RASTER_DIR / f"{name}_{v}.png").exists()
@@ -108,11 +119,11 @@ def _invoke(blender: str, name: str, extra: list[str]) -> None:
             C.console.print(f"  [dim]{line[11:]}[/]")
 
 
-def _common_args(cfg: Config, glb: Path, views: list[str]) -> list[str]:
+def _common_args(cfg: Config, glb: Path, views: list[str], ppm: float) -> list[str]:
     return [
         "--input", str(glb),
         "--views", ",".join(views),
-        "--ppm", str(cfg.render.ppm),
+        "--ppm", str(ppm),
         "--grid", str(cfg.render.grid),
         "--meters-per-unit", str(cfg.render.metersPerUnit),
     ]  # fmt: skip
@@ -124,11 +135,18 @@ def _segment_args(job: SegmentJob) -> list[str]:
         extra += ["--tile-length", str(job.tile_length), "--tile-axis", job.tile_axis]
     if job.corner_radius:
         extra += ["--corner-radius", str(job.corner_radius)]
+    rotate_z = ROTATE_Z_BY_KIND.get(job.kind)
+    if rotate_z:
+        extra += ["--rotate-z", str(rotate_z)]
     return extra
 
 
 def run(cfg: Config, plan: BuildPlan) -> None:
     """Render silhouettes + projection manifests for the building bodies and the segment pieces."""
+    try:
+        ppm = load_theme(plan.theme).pixelsPerMeter
+    except ThemeError as exc:
+        raise StageError(str(exc)) from exc
     blender = find_blender(cfg)
     views = plan.views or cfg.render.views
     seg_views = cfg.render.segmentViews
@@ -148,12 +166,12 @@ def run(cfg: Config, plan: BuildPlan) -> None:
     rendered = 0
     for glb in models:
         name = glb.stem
-        if not plan.force and not _needs_render(name, views):
+        if not plan.force and not _needs_render(name, views, ppm):
             C.console.print(f"[dim]skip[/] {name} (up to date; --force to redo)")
             continue
         C.rule(f"{name}  ({len(views)} views)")
         body_args = [
-            *_common_args(cfg, glb, views),
+            *_common_args(cfg, glb, views, ppm),
             *_prepare_arg("--clearance", PREPARE_DIR / "clearance.json"),
             *_prepare_arg("--ports", PREPARE_DIR / "ports.json"),
             *_prepare_arg("--mesh-offsets", PREPARE_DIR / "mesh_offsets.json"),
@@ -162,12 +180,14 @@ def run(cfg: Config, plan: BuildPlan) -> None:
         rendered += 1
 
     for job in segments:
-        if not plan.force and not _needs_render(job.name, seg_views):
+        # Directional pieces (conveyor lifts) need every side profile; others read from plan+front.
+        job_views = views if job.kind in FULL_VIEW_KINDS else seg_views
+        if not plan.force and not _needs_render(job.name, job_views, ppm):
             C.console.print(f"[dim]skip[/] {job.name} (up to date; --force to redo)")
             continue
-        C.rule(f"{job.name}  ({len(seg_views)} views)")
+        C.rule(f"{job.name}  ({len(job_views)} views)")
         glb = SEGMENTS_DIR / f"{job.source}.glb"
-        _invoke(blender, job.name, [*_common_args(cfg, glb, seg_views), *_segment_args(job)])
+        _invoke(blender, job.name, [*_common_args(cfg, glb, job_views, ppm), *_segment_args(job)])
         rendered += 1
 
     C.console.print(f"\n[green]Render complete[/] -> {RENDER_DIR}  ({rendered} rendered)")

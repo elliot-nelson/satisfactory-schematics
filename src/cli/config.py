@@ -79,7 +79,7 @@ class ExtractorConfig(_Lenient):
 
 
 class RenderConfig(_Model):
-    ppm: float = 20
+    # NOTE: pixels-per-meter is per-theme now (see themes/<name>.yaml -> pixelsPerMeter).
     grid: float = 1.0
     metersPerUnit: float = 1.0
     views: list[str] = ["top", "front", "back", "left", "right"]

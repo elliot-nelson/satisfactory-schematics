@@ -18,6 +18,18 @@ segments:
   pipe_junction_t:
     mesh: FactoryGame/Content/FactoryGame/Buildable/Factory/PipeJunction/Mesh/SM_PipeJunction_T_01
     kind: junction # rendered as-is
+  # Conveyor lift (Mk1): a vertical belt. Two fixed end caps (input at the bottom, output at the
+  # top) plus an extendable middle shaft. We model the caps as fixed bodies rendered as-is (like a
+  # merger/splitter) and the shaft as a tileable run -- tiled UP the Z axis to 1/2/4/8 m, like beams.
+  conveyor_lift_bottom:
+    mesh: FactoryGame/Content/FactoryGame/Buildable/Factory/ConveyorLiftMk1/Mesh/SM_ConveyorLift_Bottom_01
+    kind: lift-cap # rendered as-is
+  conveyor_lift_top:
+    mesh: FactoryGame/Content/FactoryGame/Buildable/Factory/ConveyorLiftMk1/Mesh/SM_ConveyorLift_Top_01
+    kind: lift-cap # rendered as-is
+  conveyor_lift:
+    mesh: FactoryGame/Content/FactoryGame/Buildable/Factory/ConveyorLiftMk1/Mesh/SM_ConveyorLiftMid_MK1_01
+    kind: lift # tileable middle shaft -> straight runs up the Z axis (1/2/4/8 m)
   painted_beam:
     mesh: FactoryGame/Content/FactoryGame/Buildable/Building/Pillars/Mesh/SM_BeamPainted_01
     kind: beam # extrudes along local Z -> tiled to length

@@ -1,8 +1,10 @@
 """Render themes: the per-look color + toggle config the finalize stage consumes.
 
 A theme (``themes/<slug>.yaml`` in the repo root) owns the SVG's appearance -- line/fill colors,
-port-marker colors, clearance-tick color, and whether those overlay layers draw at all. Everything
-upstream of finalize is theme-independent, so a theme is cheap: swap the file, re-run finalize.
+port-marker colors, clearance-tick color, and whether those overlay layers draw at all -- plus the
+render scale (``pixelsPerMeter``), which lives here so different themes can render at different
+resolutions. Most look knobs are consumed by finalize (cheap: swap the file, re-run finalize);
+``pixelsPerMeter`` is read by the render stage, so changing it re-renders that theme's rasters.
 
 ``--theme`` accepts either a **path** (relative or absolute, ``~`` expanded -- e.g.
 ``~/my_themes/xyz.yaml``) or a **bare name** (``xyz``) that resolves to ``themes/xyz.yaml``.
@@ -51,6 +53,7 @@ class Theme(BaseModel):
 
     slug: str = "theme"
     name: str = "theme"
+    pixelsPerMeter: float = 20.0  # render scale: 1 m -> this many px (per-theme)
     lineColor: str
     fillColor: str
     fillAlpha: float = 0.30
@@ -75,6 +78,13 @@ class Theme(BaseModel):
     def _unit_alpha(cls, v: float) -> float:
         if not 0.0 <= v <= 1.0:
             raise ValueError(f"alpha must be within 0..1, got {v}")
+        return v
+
+    @field_validator("pixelsPerMeter")
+    @classmethod
+    def _positive_ppm(cls, v: float) -> float:
+        if v <= 0:
+            raise ValueError(f"pixelsPerMeter must be > 0, got {v}")
         return v
 
     def style(self, potrace: str = "potrace") -> dict[str, Any]:

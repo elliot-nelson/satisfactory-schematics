@@ -2,9 +2,11 @@
 
 Belts and pipes are spline tiles in game, so there's no single "belt" mesh to draw -- we synthesise
 the diagram pieces at render time: a few straight runs plus two 90-degree corners. Steel beams
-extrude along their local Z, so we tile them the same way but down that axis. Pipe junctions and the
-beam connector cube are ordinary static meshes, rendered as-is. This lives here (not buried in the
-render driver) so the preview stage can reuse it to bucket each piece into the right category.
+extrude along their local Z, so we tile them the same way but down that axis. Conveyor lifts work
+like a vertical belt: fixed end caps (``lift-cap``, rendered as-is) bracketing an extendable middle
+shaft (``lift``) that we tile UP the Z axis to the straight-run lengths, just like a beam. Pipe
+junctions and the beam connector cube are ordinary static meshes, rendered as-is. This lives here
+(not buried in the render driver) so the preview stage can reuse it to bucket each piece.
 """
 
 from __future__ import annotations
@@ -22,9 +24,22 @@ _CATEGORY = {
     "belt": "logistics",
     "pipe": "logistics",
     "junction": "logistics",
+    "lift": "logistics",
+    "lift-cap": "logistics",
     "beam": "architecture",
     "connector-cube": "architecture",
 }
+
+# Most segments read fine from just plan + one side profile (segmentViews). These kinds don't: a
+# conveyor lift is directional (input low on one side, output high on the opposite), so its side
+# profiles all differ -- only the top view is rotationally reusable. Render them at the full view
+# set (top/front/back/left/right) like a building instead.
+FULL_VIEW_KINDS = frozenset({"lift", "lift-cap"})
+
+# Degrees to spin a piece about world Z before framing. Conveyor lifts extract with their run on the
+# wrong axis for our view labels; +90 puts left->front, right->back, back->left, front->right (and
+# turns the top view's "right" onto "up"). 0 (absent) means render as extracted.
+ROTATE_Z_BY_KIND = {"lift": 90.0, "lift-cap": 90.0}
 
 
 @dataclass(frozen=True)
@@ -33,7 +48,7 @@ class SegmentJob:
 
     name: str  # output stem, e.g. belt_4m / belt_corner / painted_beam_8m
     source: str  # extracted glb stem, e.g. belt_segment
-    kind: str  # belt / pipe / beam / junction / connector-cube
+    kind: str  # belt / pipe / beam / lift / junction / connector-cube / lift-cap
     category: str
     tile_length: float | None = None  # meters, straight run
     corner_radius: float | None = None  # meters, 90-degree bend
@@ -66,7 +81,8 @@ def segment_jobs(catalog: Catalog, lengths: list[int]) -> list[SegmentJob]:
                 jobs.append(
                     SegmentJob(f"{pre}_{suffix}", seg.name, kind, category, corner_radius=radius)
                 )
-        elif kind == "beam":
+        elif kind in ("beam", "lift"):
+            # Both extrude straight up their local Z, so a run is a tile-count along that axis.
             for length in lengths:
                 jobs.append(
                     SegmentJob(
@@ -78,6 +94,6 @@ def segment_jobs(catalog: Catalog, lengths: list[int]) -> list[SegmentJob]:
                         tile_axis="z",
                     )
                 )
-        else:  # junction, connector-cube: render the mesh as-is
+        else:  # junction, connector-cube, lift-cap: render the mesh as-is
             jobs.append(SegmentJob(seg.name, seg.name, kind, category))
     return jobs

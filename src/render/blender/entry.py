@@ -87,6 +87,12 @@ def parse_args(argv):
     p.add_argument(
         "--tile-axis", default="x", help="Run axis for tiling (x for belts, z for beams)."
     )
+    p.add_argument(
+        "--rotate-z",
+        type=float,
+        default=0.0,
+        help="Spin the (segment) piece this many degrees about world Z before framing.",
+    )
     return p.parse_args(argv)
 
 
@@ -661,6 +667,13 @@ def main():
         # Segment mode: a belt/pipe/beam tile (or a junction rendered as-is). No blueprint
         # placement, no ports, no clearance -- just shape the geometry and frame it.
         mesh_objects = shape_segment(mesh_objects, args)
+        if args.rotate_z:
+            # Reorient the whole piece about world Z before framing (e.g. conveyor lifts, whose
+            # extracted orientation puts the belt run on the wrong side for our view labels).
+            rot = Matrix.Rotation(math.radians(args.rotate_z), 4, "Z")
+            for obj in mesh_objects:
+                obj.matrix_world = rot @ obj.matrix_world
+            bpy.context.view_layer.update()
     else:
         # Place the body where the blueprint puts it, then capture the body centre -- that's the
         # axis the annot correction rotates the port markers about.
