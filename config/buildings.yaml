@@ -8,7 +8,10 @@
 #              (via `--dump-ports`). The Docs ClassName (Build_<X>_C) comes from the leaf.
 #   category:  which preview section it lands in (production / logistics / architecture).
 #   annot:     OPTIONAL per-building port-layer fixup. Only used later in the pipeline; extraction
-#              doesn't care about it.
+#              doesn't care about it. Keys:
+#                rot_deg / shift  -- rigidly reseat the whole port frame onto the body.
+#                flatten_ports    -- default true; set false when a face's I/O genuinely sits at
+#                                    different depths, so ports keep their own surface seat.
 #
 # Notes:
 #   - We use the "_static" meshes where those are the current in-game geometry; a few buildings
@@ -65,6 +68,12 @@ converter:
   mesh: FactoryGame/Content/FactoryGame/Buildable/Factory/Converter/Mesh/SM_Converter_01
   blueprint: FactoryGame/Content/FactoryGame/Buildable/Factory/Converter/Build_Converter
   category: production
+
+quantum_encoder:
+  mesh: FactoryGame/Content/FactoryGame/Buildable/Factory/QuantumEncoder/Mesh/SM_QuantumEncoder_01
+  blueprint: FactoryGame/Content/FactoryGame/Buildable/Factory/QuantumEncoder/Build_QuantumEncoder
+  category: production
+  annot: { flatten_ports: false } # stepped input face: belts/pipes sit at different depths, don't co-planar them
 
 # Logistics: use the square SM_ bodies, NOT the stretched-out *_static meshes.
 splitter:

@@ -401,11 +401,14 @@ def apply_canonical(yaw_deg, mesh_objects, ports, clearance):
     return _rotate_box_z(clearance, rot) if clearance is not None else None
 
 
-def snap_ports_to_surface(mesh_objects, ports, band=1.0, reach=3.0):
+def snap_ports_to_surface(mesh_objects, ports, band=1.0, reach=3.0, flatten=True):
     """Seat each port on the body's outer face along its facing. The stored point is often recessed
     under an overhang (or sits slightly proud), so we snap to the outermost body vertex within reach
-    -- inward or outward. Scans mesh vertices in a narrow lateral band, then makes same-facing ports
-    coplanar to their innermost edge so a side reads as one clean row."""
+    -- inward or outward. Scans mesh vertices in a narrow lateral band, then (when ``flatten``)
+    makes same-facing ports coplanar to their innermost edge so a side reads as one clean row.
+
+    Set ``flatten=False`` for machines whose I/O genuinely sits at different depths on one face
+    (e.g. the Quantum Encoder's stepped input side); there each port keeps its own surface seat."""
     if not ports:
         return
     up = Vector((0.0, 0.0, 1.0))
@@ -432,6 +435,9 @@ def snap_ports_to_surface(mesh_objects, ports, band=1.0, reach=3.0):
         if info["snapped"]:
             best = max(info["projs"])
             port["pos"] = port["pos"] + port["face"] * (best - info["cur"])
+
+    if not flatten:  # stepped face: leave each port on its own surface seat
+        return
 
     groups = {}
     for port, info in zip(ports, infos, strict=True):
@@ -663,6 +669,7 @@ def main():
 
     ports: list = []
     clearance_m = None
+    flatten_ports = True
     if args.kind:
         # Segment mode: a belt/pipe/beam tile (or a junction rendered as-is). No blueprint
         # placement, no ports, no clearance -- just shape the geometry and frame it.
@@ -688,6 +695,7 @@ def main():
 
         annot = mesh_offset.get("annot") if mesh_offset else None
         if annot:
+            flatten_ports = bool(annot.get("flatten_ports", True))
             apply_annot_offset(annot, ports, body_center, inv)
 
         # Canonical orientation for flow-through machines: send OUTPUT -> +Y (front). This runs
@@ -717,7 +725,7 @@ def main():
             }
 
     if ports and not args.no_port_snap:
-        snap_ports_to_surface(mesh_objects, ports)
+        snap_ports_to_surface(mesh_objects, ports, flatten=flatten_ports)
 
     strokes_module = str(Path(__file__).resolve().parent / "freestyle.py")
     setup_engine(mesh_objects, args.crease_deg, strokes_module)
